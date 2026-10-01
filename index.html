@@ -72,6 +72,20 @@ body.in-intro { background: #000; }
   position: absolute; top: 12px; right: 16px; z-index: 2;
 }
 body.in-menu #btnPause, body.in-intro #btnPause { display: none; }
+.skip-btn {
+  position: absolute; top: 14px; right: 76px; z-index: 2; display: none;
+  height: 44px; padding: 0 14px; border-radius: 12px; border: 3px solid var(--ink);
+  background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 var(--ink);
+  font: 800 15px var(--font-body); cursor: pointer;
+}
+body.in-tut:not(.in-menu) .skip-btn { display: block; }
+/* TAKE glows when the chicken is relaxed enough to fall for it */
+#bGrab.glow { animation: takeGlow 0.7s ease-in-out infinite alternate; }
+@keyframes takeGlow {
+  from { box-shadow: 0 6px 0 var(--ink), 0 0 0 0 rgba(159, 242, 255, 0.0); }
+  to { box-shadow: 0 6px 0 var(--ink), 0 0 22px 6px rgba(159, 242, 255, 0.85); transform: translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) { #bGrab.glow { animation: none; outline: 4px solid var(--cream); } }
 .icon-btn {
   width: 48px; height: 48px; border-radius: 14px; border: 3px solid var(--ink);
   background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 var(--ink);
@@ -226,6 +240,7 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
   <div id="stage">
     <canvas id="cv" aria-label="Game table: you and a rubber chicken take turns tapping a cup over a bell"></canvas>
     <button id="btnPause" class="icon-btn" aria-label="Pause">II</button>
+    <button id="btnSkipTut" class="skip-btn">Skip tutorial</button>
 
     <section id="title" class="overlay" hidden>
       <div class="card">
@@ -271,7 +286,10 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
           <li><b class="n">5</b><p>Miss your beat and you get smacked too. Win the level and you get to finish the chicken off. Every level is faster.</p></li>
         </ol>
         <p class="keys">Keyboard: <kbd>Space</kbd> tap · <kbd>F</kbd> take · <kbd>Esc</kbd> pause. In the finisher, hold either button.</p>
-        <button id="btnHowBack" class="btn">Got it</button>
+        <div class="row">
+          <button id="btnHowTut" class="btn alt">Play the tutorial</button>
+          <button id="btnHowBack" class="btn">Got it</button>
+        </div>
       </div>
     </section>
 

@@ -28,6 +28,14 @@ You and the chicken take turns tapping a plastic cup that covers a bell. On your
 - To play-test a level, open the page with `#level-20` (or any number) on the URL and use the **Test** button.
 - You have 5 HP. The chicken has 3 HP on level 1, 4 on levels 2–3, and 5 after that. The last hit on the chicken is always the finisher.
 
+## Tutorial and hints
+
+The first time you play level 1 there's a short hands-on tutorial at a slow tempo with no HP at stake: tap 3 times on the beat, survive the chicken taking the cup without tapping, then take the cup yourself (the chicken always falls for it) and smack it. It can be skipped, and replayed from **How to play**.
+
+For everyone, afterwards:
+- The **TAKE** button glows when the chicken's suspicion is low enough that a take is likely to work.
+- On levels 1–2, a **DON'T TAP!** warning flashes when the chicken takes the cup.
+
 ## Intro
 
 The first time you hit Play in a session there's a ~7 second cold open: a beaten rubber chicken on the floor, a slow push-in with a drone and heartbeat, its eye snaps open, and it comes back screaming for revenge. Tap or press any key to skip it. The **Intro** toggle on the title screen turns it off for good.
@@ -52,7 +60,7 @@ The catalog (`WEAPONS`, `RARITY`, `MYSTERY`) is at the top of `js/game.js`. All 
 
 ## Playing it on phones
 
-The game is hosted for free with GitHub Pages at **https://syoon117.github.io/Cluck-Around-And-Find-Out/** once Pages is turned on (repo **Settings → Pages → Build and deployment → Source: Deploy from a branch**, pick the branch and `/ (root)`, Save). Every push to that branch updates the site in a minute or two.
+The game is hosted for free with GitHub Pages at **https://syoon117.github.io/Cluck-Around-And-Find-Out/** once Pages is turned on (repo **Settings → Pages → Build and deployment → Source: Deploy from a branch**, pick the branch and `/ (root)`, Save). Every push to that branch updates the site in a minute or two, and installed copies pick it up on their next launch (when online).
 
 To install it like an app:
 

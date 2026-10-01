@@ -1,7 +1,7 @@
-// Offline support for the installed app. Serves the cached game instantly, then refreshes the
-// cache in the background, so a new version shows up on the next launch after you push.
+// Offline support for the installed app. When online it always loads the latest version (so
+// updates show up on the very next launch), and falls back to the saved copy when offline.
 // Bump VERSION when you add or rename files.
-const VERSION = 'cluck-v1';
+const VERSION = 'cluck-v2';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'js/audio.js', 'js/draw.js', 'js/game.js',
@@ -23,11 +23,16 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
     caches.open(VERSION).then(async (cache) => {
-      const cached = await cache.match(e.request, { ignoreSearch: true });
-      const fresh = fetch(e.request)
-        .then((res) => { if (res.ok || res.type === 'opaque') cache.put(e.request, res.clone()); return res; })
-        .catch(() => cached);
-      return cached || fresh;
+      try {
+        // revalidate with the server instead of trusting the browser's HTTP cache
+        const res = await fetch(e.request, { cache: 'no-cache' });
+        if (res.ok || res.type === 'opaque') cache.put(e.request, res.clone());
+        return res;
+      } catch (err) {
+        const cached = await cache.match(e.request, { ignoreSearch: true });
+        if (cached) return cached;
+        throw err;
+      }
     }),
   );
 });

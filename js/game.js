@@ -188,7 +188,7 @@
   let introSeen = false;
   function beginGame(lv) {
     if (save.intro && !introSeen) playIntro(lv);
-    else startLevel(lv);
+    else launch(lv);
   }
   function playIntro(lv) {
     Sfx.init();
@@ -203,7 +203,7 @@
     G.intro.audio.stop();
     const lv = G.intro.lv;
     G.intro = null; G.shake = 0; G.redFlash = 0;
-    startLevel(lv);
+    launch(lv);
   }
   function updateIntro(now) {
     const I = G.intro, el = now - I.t0;
@@ -263,11 +263,12 @@
   }
 
   // ---------- level / round ----------
-  function startLevel(lv) {
+  function startLevel(lv, opts = {}) {
     Sfx.init();
     G.level = lv;
-    G.T = tempoFor(lv, curRamp());
-    G.W = clamp(G.T * 0.45, 0.06, 0.25);
+    G.tut = opts.tutorial ? { step: 'tap', good: 0 } : null;
+    G.T = G.tut ? 0.85 : tempoFor(lv, curRamp());
+    G.W = G.tut ? 0.3 : clamp(G.T * 0.45, 0.06, 0.25);
     G.hpPMax = 5; G.hpP = 5;
     G.hpCMax = lv === 1 ? 3 : lv <= 3 ? 4 : 5; G.hpC = G.hpCMax;
     G.skin = SKIN_BY_LEVEL[(lv - 1) % SKIN_BY_LEVEL.length];
@@ -277,8 +278,28 @@
     showOverlay(null);
     G.scene = 'play';
     newRound(0.7);
-    if (lv === 1 && !save.tutorialDone) G.banner = { text: 'Tap on YOUR beat, when the ring hits the cup', until: Sfx.now() + 6 };
+    if (G.tut) tutBanner('Hit TAP when the ring closes on the cup');
     else G.banner = { text: `${G.name} · ${Math.round(60 / G.T)} BPM`, until: Sfx.now() + 2.4 };
+  }
+
+  // ---------- first-time tutorial ----------
+  // Slow tempo, no HP lost, scripted chicken: 3 clean taps -> survive a grab without tapping
+  // -> take the cup yourself, the chicken always falls for it -> smack. Then level 1 for real.
+  function launch(lv) {
+    if (lv === 1 && !save.tutDone) startLevel(1, { tutorial: true });
+    else startLevel(lv);
+  }
+  function tutBanner(text) { G.banner = { text, until: Infinity }; }
+  function endTutorial() {
+    save.tutDone = true; persist();
+    G.tut = null;
+    startLevel(1);
+  }
+  function tutGotIt() {
+    save.tutDone = true; persist();
+    G.tut.step = 'done';
+    tutBanner("That's the game. Now faster. Forever.");
+    waitThen(2.4, () => { G.tut = null; startLevel(1); });
   }
   function withArticle(name) {
     if (/^(the|a|an|grandma's|bare) /i.test(name)) return name.replace(/^The /, 'the ').replace(/^A /, 'a ');
@@ -301,6 +322,7 @@
 
   // ---------- chicken brain ----------
   function decideIntent() {
+    if (G.tut) return { grab: G.tut.step === 'dodge' && G.cup === 'on' && G.streakC >= 2, fake: false, tell: false };
     const L = G.level;
     let grab = false, fake = false, tell = false;
     if (G.cup === 'on' && G.streakC >= 2) grab = Math.random() < Math.min(0.7, 0.14 + 0.09 * (G.streakC - 2) + 0.02 * (L - 1));
@@ -334,7 +356,9 @@
       Sfx.snatch(t);
       at(t, () => {
         G.cup = 'chicken'; G.cupVis = 'chicken'; G.gleam = 1; G.streakC = 0; G.bobT = t;
-        if (G.level === 1 && !save.tutorialDone) G.banner = { text: "BELL'S OPEN — DON'T TAP!", until: Sfx.now() + G.T * 1.6 };
+        // levels 1-2 (and the tutorial) spell it out; after that you're on your own
+        if (G.tut) tutBanner("IT TOOK THE CUP! DON'T TAP!");
+        else if (G.level <= 2) floater("DON'T TAP!", 380, 470, { size: 46, color: '#ff6a4d', dur: Math.max(0.6, G.T * 1.4), rise: 0 });
         if (Math.random() < 0.35) say(pick(['bawk?', 'hehe', 'hehehe']), 0.7);
       });
     } else if (b.intent && b.intent.fake) {
@@ -362,6 +386,12 @@
     Sfx.ding(now + 0.05);
     at(now + 0.05, () => { G.gleam = 1; G.shake = 8; floater('DING!', 380, 560, { size: 56, color: '#ffd84a', dur: 1 }); });
     G.eyes = { mode: 'smug', until: now + 2 };
+    if (G.tut) { // no smack in the tutorial, just a do-over
+      tutBanner("You rang the bell. That's a smack! Try again.");
+      say('hehehe', 1.2);
+      waitThen(1.6, () => { newRound(0.4); tutBanner('When the chicken takes the cup, DON\'T tap'); });
+      return;
+    }
     waitThen(0.55, () => startSmack('player'));
   }
   function foul(text) {
@@ -405,6 +435,7 @@
     motion(G.glove, now, now + 0.05, now + 0.25, P.gloveTap, P.gloveHome);
     Sfx.tap(now + 0.04, 'player');
     G.streakP = 0;
+    if (G.tut && G.tut.step === 'tap') G.tut.good = 0;
     floater('OFF-BEAT', 380, 548, { size: 26, color: '#ff9d7a', dur: 0.6 });
   }
   function playerTap(now, dt) {
@@ -412,15 +443,18 @@
     Sfx.tap(now + 0.04, 'player');
     G.streakP++;
     if (Math.abs(dt) <= G.W * 0.35) floater('PERFECT', 520, 600, { size: 22, color: '#9ff2ff', dur: 0.5, rise: 30 });
-    if (G.level === 1 && !save.tutorialDone && G.streakP === 4 && !G.grabbedOnce)
-      G.banner = { text: 'Suspicion is low. Hit TAKE on your beat to steal the cup!', until: now + 5 };
+    if (G.tut && G.tut.step === 'tap') {
+      G.tut.good++;
+      if (G.tut.good >= 3) { G.tut.step = 'dodge'; tutBanner('Nice. Keep tapping, and watch the chicken...'); }
+      else tutBanner(`Hit TAP when the ring closes on the cup (${G.tut.good}/3)`);
+    }
   }
   function playerGrab(now) {
     G.cup = 'player'; G.trickP = trickChance(G.streakP); G.streakP = 0; G.grabbedOnce = true;
+    if (G.tut) { G.trickP = G.tut.step === 'take' ? 1 : 0; if (G.tut.step === 'take') tutBanner('It fell for it!'); }
     motion(G.glove, now, now + 0.05, now + 0.3, P.gloveTap, P.gloveHold);
     Sfx.snatch(now + 0.04);
     at(now + 0.05, () => { G.cupVis = 'player'; G.gleam = 1; });
-    if (G.level === 1 && !save.tutorialDone) G.banner = { text: 'Now put it back on your next beat', until: now + 2 };
   }
   function returnCup(now) {
     G.cup = 'on';
@@ -429,12 +463,19 @@
     at(now + 0.06, () => { G.cupVis = 'on'; });
   }
   function resolveMiss() {
+    if (G.tut && G.cup !== 'chicken') { // tutorial: a missed beat is just a reminder
+      floater('MISSED', 380, 548, { size: 30, color: '#ff9d7a', dur: 0.7 });
+      if (G.tut.step === 'tap') { G.tut.good = 0; tutBanner('Hit TAP when the ring closes on the cup'); }
+      if (G.cup === 'player') returnCup(Sfx.now());
+      return;
+    }
     if (G.cup === 'on') return foul(pick(['TOO SLOW!', 'MISSED YOUR BEAT!', 'HESITATED!']));
     if (G.cup === 'player') return foul('PUT IT BACK!');
     // chicken holds the cup and you didn't touch the bell
     G.stats.dodges++;
     floater('DODGED', 380, 548, { size: 34, color: '#9ff2a0', dur: 0.8 });
     addEggs(1);
+    if (G.tut && G.tut.step === 'dodge') { G.tut.step = 'take'; tutBanner('Your turn to trick it. Hit TAKE on your beat!'); }
   }
 
   // ---------- update: rhythm ----------
@@ -512,6 +553,7 @@
     }
     if (el >= 1.85) {
       G.smack = null;
+      if (G.tut) return tutGotIt();
       if (G.hpP <= 0) return gameOver();
       G.scene = 'play';
       newRound(0.35);
@@ -645,6 +687,12 @@
     $('bTap').innerHTML = mode === 'smack' ? 'SMACK!<small>Space</small>' : mode === 'fin' ? 'HOLD<small>hold Space</small>' : 'TAP<small>Space</small>';
     $('bTap').classList.toggle('big', mode !== 'play');
   }
+  // every frame: hint TAKE when it's likely to work (or when the tutorial asks for it)
+  function syncHints() {
+    const glow = G.scene === 'play' && G.cup === 'on' && (G.tut ? G.tut.step === 'take' : trickChance(G.streakP) >= 0.58);
+    $('bGrab').classList.toggle('glow', glow);
+    document.body.classList.toggle('in-tut', !!G.tut && G.scene !== 'title');
+  }
 
   // ---------- main loop ----------
   let last = 0;
@@ -666,6 +714,7 @@
       G.gleam = Math.max(0, G.gleam - dt * 1.6);
     }
     syncControls();
+    syncHints();
     render(now);
     requestAnimationFrame(frame);
   }
@@ -958,9 +1007,9 @@
       D.fs(ctx, sus > 0.66 ? '#ff6a4d' : sus > 0.33 ? '#ffd84a' : '#9ff2a0');
     }
     // top-left: level
-    D.text(ctx, `LV ${G.level}`, HUD.l, 30, 26, '#fff3c4', { align: 'left' });
+    D.text(ctx, G.tut ? 'TUTORIAL' : `LV ${G.level}`, HUD.l, 30, G.tut ? 20 : 26, '#fff3c4', { align: 'left' });
     D.text(ctx, `${Math.round(60 / G.T)} BPM`, HUD.l, 60, 18, '#9ff2ff', { align: 'left', font: "'Barlow Semi Condensed', sans-serif", weight: 800, lw: 4 });
-    D.text(ctx, ranked() ? 'RANKED' : `CUSTOM ×${save.ramp}`, HUD.l, 84, 15, ranked() ? '#ffd84a' : '#ff9d7a', { align: 'left', font: "'Barlow Semi Condensed', sans-serif", weight: 800, lw: 4 });
+    if (!G.tut) D.text(ctx, ranked() ? 'RANKED' : `CUSTOM ×${save.ramp}`, HUD.l, 84, 15, ranked() ? '#ffd84a' : '#ff9d7a', { align: 'left', font: "'Barlow Semi Condensed', sans-serif", weight: 800, lw: 4 });
     // bottom: you
     D.text(ctx, 'YOU', HUD.l, 940, 22, '#9ff2ff', { align: 'left' });
     D.hpBar(ctx, HUD.l + 66, 928, 200, 24, G.hpP, G.hpPMax, '#4de1a0');
@@ -1148,6 +1197,8 @@
   });
   on('btnHow', () => showOverlay('howto'));
   on('btnHowBack', () => showOverlay('title'));
+  on('btnHowTut', () => { introSeen = true; startLevel(1, { tutorial: true }); });
+  on('btnSkipTut', () => { if (G.tut) endTutorial(); });
   on('btnShop', () => { shopReturn = 'title'; $('shopMsg').textContent = ''; showOverlay('shop'); });
   on('btnShopBack', () => showOverlay(shopReturn));
   on('btnNext', () => startLevel(G.level + 1));
@@ -1161,7 +1212,7 @@
   on('btnPackDone', () => { $('shopMsg').textContent = ''; showOverlay('shop'); });
   on('btnClearBrag', (e) => copyBrag('clearBrag', e.currentTarget));
   on('btnOverBrag', (e) => copyBrag('overBrag', e.currentTarget));
-  on('btnQuit', () => { G.paused = false; Sfx.resume(); G.fin = null; G.smack = null; G.ready = null; G.bubble = null; G.scene = 'title'; showOverlay('title'); });
+  on('btnQuit', () => { G.tut = null; G.paused = false; Sfx.resume(); G.fin = null; G.smack = null; G.ready = null; G.bubble = null; G.scene = 'title'; showOverlay('title'); });
   on('btnPause', pause);
   on('tgMusic', () => { save.music = !save.music; Sfx.musicOn = save.music; persist(); refreshTitle(); });
   on('tgIntro', () => { save.intro = !save.intro; persist(); refreshTitle(); });
@@ -1201,7 +1252,7 @@
   });
 
   // test hook (used by the automated smoke test; harmless in play)
-  window.__cluck = { G, save, beginGame, startLevel, startFinisher, readySmack, tempoFor, rankFor, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
+  window.__cluck = { G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
 
   showOverlay('title');
   requestAnimationFrame(frame);
