@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b2c29">
+<!-- page:start -->
+<title>Cluck Around and Find Out</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rammetto+One&family=Barlow+Semi+Condensed:wght@500;700;800&display=swap">
+<style>
+/* Layout: one screen. Canvas stage on top, a two-button control bar below, menus as toy-box cards over the stage. */
+:root {
+  color-scheme: dark;
+  --wall: #0b2c29;       /* felt-green back room */
+  --ink: #1d120a;        /* outline black, warm */
+  --kraft: #e3b57a;      /* toy-box cardboard */
+  --cream: #fff3c4;
+  --yolk: #ffd23f;       /* rubber chicken yellow */
+  --tomato: #e8432e;
+  --sky: #9ff2ff;
+  --font-display: 'Rammetto One', 'Arial Black', Impact, sans-serif;
+  --font-body: 'Barlow Semi Condensed', 'Arial Narrow', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { height: 100%; }
+body {
+  height: 100%; margin: 0; overflow: hidden;
+  background: var(--wall); color: var(--cream);
+  font-family: var(--font-body); font-size: 17px;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; overscroll-behavior: none;
+}
+#app { height: 100%; display: flex; flex-direction: column; }
+#stage { position: relative; flex: 1; min-height: 0; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+/* ---------- controls ---------- */
+#controls {
+  display: flex; justify-content: center; gap: 12px; padding: 10px 16px 14px;
+  background: #170c06; border-top: 4px solid var(--ink);
+}
+.ctl {
+  flex: 1; min-width: 0; max-width: 340px; height: 76px; border-radius: 20px;
+  border: 4px solid var(--ink); box-shadow: 0 6px 0 var(--ink);
+  font-family: var(--font-display); font-size: 26px; letter-spacing: 0.02em; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  cursor: pointer; touch-action: none; transition: transform 0.04s, box-shadow 0.04s;
+}
+.ctl small { font-family: var(--font-body); font-weight: 800; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+.ctl:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--ink); }
+#bGrab { background: var(--sky); flex: 0.8; }
+#bTap { background: var(--yolk); }
+#bTap.big { background: var(--tomato); color: var(--cream); max-width: 520px; }
+.ctl:focus-visible, .btn:focus-visible, .icon-btn:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
+body.in-menu #controls, body.in-intro #controls { visibility: hidden; }
+body.in-intro { background: #000; }
+@media (hover: none) { .ctl small { display: none; } }
+
+#btnPause {
+  position: absolute; top: 12px; right: 16px; z-index: 2;
+}
+body.in-menu #btnPause, body.in-intro #btnPause { display: none; }
+.icon-btn {
+  width: 48px; height: 48px; border-radius: 14px; border: 3px solid var(--ink);
+  background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 var(--ink);
+  font: 800 18px var(--font-body); cursor: pointer; display: grid; place-items: center;
+}
+
+/* ---------- menus ---------- */
+.overlay {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(8, 20, 18, 0.55);
+}
+.card {
+  width: 100%; max-width: 480px; max-height: 100%; overflow: auto;
+  background: var(--kraft); color: var(--ink);
+  border: 4px solid var(--ink); border-radius: 22px; box-shadow: 8px 8px 0 var(--ink);
+  padding: 20px 18px; display: flex; flex-direction: column; gap: 12px;
+  -webkit-user-select: text; user-select: text;
+}
+.card.wide { max-width: 640px; }
+.logo {
+  margin: 0; font-family: var(--font-display); font-weight: 400; line-height: 0.95; text-align: center;
+  font-size: clamp(34px, 9vw, 52px); color: var(--yolk); text-wrap: balance;
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
+  text-shadow: 3px 3px 0 var(--ink), 6px 6px 0 var(--tomato);
+}
+.logo span { display: block; font-size: 0.62em; color: var(--cream); }
+.tag { margin: 0; text-align: center; font-weight: 700; font-size: 17px; line-height: 1.3; text-wrap: balance; }
+h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 30px; line-height: 1.05; text-wrap: balance; }
+h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 18px; line-height: 1.1; }
+p { margin: 0; line-height: 1.35; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > .btn { flex: 1 1 140px; }
+.btn {
+  min-height: 54px; padding: 10px 18px; border-radius: 16px; border: 4px solid var(--ink);
+  background: var(--yolk); color: var(--ink); box-shadow: 0 5px 0 var(--ink);
+  font-family: var(--font-display); font-size: 20px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.btn.alt { background: var(--cream); }
+.btn.hot { background: var(--tomato); color: var(--cream); }
+.btn.small { min-height: 44px; font-size: 16px; padding: 6px 14px; flex: none; }
+.btn:disabled { background: #cfa067; box-shadow: 0 2px 0 var(--ink); transform: translateY(3px); cursor: default; opacity: 0.85; }
+.btn.short { background: #e7c79c; }
+.toggles { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.toggle {
+  border: 3px solid var(--ink); border-radius: 999px; background: transparent; color: var(--ink);
+  font: 800 15px var(--font-body); letter-spacing: 0.06em; text-transform: uppercase; padding: 8px 16px; cursor: pointer;
+}
+.toggle[aria-pressed="true"] { background: var(--ink); color: var(--yolk); }
+.toggle[aria-pressed="false"] { text-decoration: line-through; opacity: 0.7; }
+.wallet { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; }
+.egg-dot { display: inline-block; width: 14px; height: 18px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #fff4d6; border: 2.5px solid var(--ink); flex: none; }
+
+.rules { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.rules li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+.rules b.n {
+  width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--yolk);
+  display: grid; place-items: center; font-family: var(--font-display); font-weight: 400; font-size: 16px;
+}
+.keys { font-size: 15px; background: rgba(29, 18, 10, 0.1); border-radius: 12px; padding: 10px 12px; }
+kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bottom-width: 4px; border-radius: 6px; padding: 0 6px; background: var(--cream); }
+
+.shop-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.section-label { font-weight: 800; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
+.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.item {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+  background: #f0cb97; border: 3px solid var(--ink); border-radius: 16px; padding: 10px 12px;
+}
+.item.equipped { background: var(--yolk); }
+.item-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.item .contents { font-weight: 800; font-size: 15px; }
+.item .blurb { font-size: 15px; opacity: 0.8; }
+.icons { display: flex; }
+.icons .icon { width: 50px; height: 50px; margin-right: -12px; }
+.icons .icon:last-child { margin-right: 0; }
+#shopMsg { min-height: 1.35em; font-weight: 700; }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.stat { background: rgba(29, 18, 10, 0.1); border-radius: 12px; padding: 8px 12px; }
+.stat b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 26px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; }
+.badge {
+  align-self: center; display: flex; align-items: center; gap: 12px;
+  background: var(--ink); color: var(--cream); border-radius: 999px; padding: 6px 20px 6px 6px;
+}
+.badge-num {
+  min-width: 58px; height: 58px; padding: 0 8px; border-radius: 999px; background: var(--yolk); color: var(--ink);
+  display: grid; place-items: center; font-family: var(--font-display); font-size: 26px; font-variant-numeric: tabular-nums;
+  border: 3px solid var(--cream);
+}
+.badge-text { display: flex; flex-direction: column; line-height: 1.1; }
+.badge-text small { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
+.badge-text b { font-family: var(--font-display); font-weight: 400; font-size: 20px; color: var(--yolk); }
+.modes { display: flex; flex-direction: column; gap: 8px; }
+.seg { display: flex; border: 3px solid var(--ink); border-radius: 14px; overflow: hidden; }
+.seg-btn { flex: 1; min-height: 42px; border: 0; background: transparent; color: var(--ink); font: 400 17px var(--font-display); cursor: pointer; }
+.seg-btn + .seg-btn { border-left: 3px solid var(--ink); }
+.seg-btn[aria-pressed="true"] { background: var(--ink); color: var(--yolk); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { flex: 1 1 auto; border: 2.5px solid var(--ink); border-radius: 999px; background: transparent; color: var(--ink); font: 800 14px var(--font-body); padding: 6px 10px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--tomato); color: var(--cream); }
+.mode-note { font-size: 14px; font-weight: 700; opacity: 0.8; text-align: center; }
+.seg-btn:focus-visible, .chip:focus-visible, .toggle:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.brag { display: flex; gap: 10px; align-items: center; background: rgba(29, 18, 10, 0.1); border-radius: 12px; padding: 10px 12px; }
+.brag p { flex: 1; min-width: 0; font-style: italic; font-size: 15px; -webkit-user-select: text; user-select: text; }
+@media (max-width: 420px) {
+  .item { grid-template-columns: 1fr auto; }
+  .item .icons { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .ctl, .btn { transition: none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="cv" aria-label="Game table: you and a rubber chicken take turns tapping a cup over a bell"></canvas>
+    <button id="btnPause" class="icon-btn" aria-label="Pause">II</button>
+
+    <section id="title" class="overlay" hidden>
+      <div class="card">
+        <h1 class="logo">Cluck Around <span>and Find Out</span></h1>
+        <p class="tag">Tap the cup. Steal the cup. Whoever rings the bell gets smacked.</p>
+        <div class="badge" aria-label="Your best level">
+          <span class="badge-num" id="badgeLevel">1</span>
+          <span class="badge-text"><small>Your level</small><b id="badgeRank">Raw Egg</b></span>
+        </div>
+        <div class="modes">
+          <div class="seg" role="group" aria-label="Mode">
+            <button id="mdRanked" class="seg-btn" aria-pressed="true">Ranked</button>
+            <button id="mdCustom" class="seg-btn" aria-pressed="false">Custom</button>
+          </div>
+          <div id="rampRow" class="chips" role="group" aria-label="How fast the tempo climbs" hidden></div>
+          <p id="modeNote" class="mode-note"></p>
+        </div>
+        <div class="stack">
+          <button id="btnPlay" class="btn hot">Play</button>
+          <button id="btnContinue" class="btn" hidden>Continue</button>
+          <div class="row">
+            <button id="btnShop" class="btn alt">Packs</button>
+            <button id="btnHow" class="btn alt">How to play</button>
+          </div>
+        </div>
+        <div class="wallet"><span class="egg-dot"></span><span id="titleEggs">0</span> eggs</div>
+        <div class="toggles">
+          <button id="tgMusic" class="toggle" aria-pressed="true">Music</button>
+          <button id="tgSfx" class="toggle" aria-pressed="true">Sound</button>
+          <button id="tgIntro" class="toggle" aria-pressed="true">Intro</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="howto" class="overlay" hidden>
+      <div class="card">
+        <h2>How to play</h2>
+        <ol class="rules">
+          <li><b class="n">1</b><p>You and the chicken take turns hitting the cup. Hit <b>TAP</b> on your beat, when the ring closes on the cup.</p></li>
+          <li><b class="n">2</b><p>If the chicken snatches the cup, the bell is open. <b>Don't tap.</b> Hit the bell and you get smacked.</p></li>
+          <li><b class="n">3</b><p>On your beat, hit <b>TAKE</b> to steal the cup. If the chicken slams the bell, everything freezes and you get to <b>SMACK</b> it. Put the cup back on your next beat.</p></li>
+          <li><b class="n">4</b><p>The longer you play it straight, the lower the chicken's <b>suspicion</b> and the more likely it falls for a grab.</p></li>
+          <li><b class="n">5</b><p>Miss your beat and you get smacked too. Win the level and you get to finish the chicken off. Every level is faster.</p></li>
+        </ol>
+        <p class="keys">Keyboard: <kbd>Space</kbd> tap · <kbd>F</kbd> take · <kbd>Esc</kbd> pause. In the finisher, hold either button.</p>
+        <button id="btnHowBack" class="btn">Got it</button>
+      </div>
+    </section>
+
+    <section id="shop" class="overlay" hidden>
+      <div class="card wide">
+        <div class="shop-head">
+          <h2>Packs</h2>
+          <div class="wallet"><span class="egg-dot"></span><span id="shopEggs">0</span> eggs</div>
+        </div>
+        <p>Every pack adds weapons to your pool. Each smack picks one at random. Earn eggs by smacking, dodging and clearing levels.</p>
+        <p id="shopMsg" role="status" aria-live="polite"></p>
+        <div class="section-label">Smack packs</div>
+        <ul id="packList" class="items"></ul>
+        <div class="section-label">Finishers</div>
+        <ul id="finList" class="items"></ul>
+        <button id="btnShopBack" class="btn">Done</button>
+      </div>
+    </section>
+
+    <section id="clear" class="overlay" hidden>
+      <div class="card">
+        <h2 id="clearTitle">Level cleared</h2>
+        <p id="clearSub"></p>
+        <div class="stats">
+          <div class="stat"><b id="clearSmacks">0</b><span>Hits landed</span></div>
+          <div class="stat"><b id="clearDodges">0</b><span>Dodges</span></div>
+          <div class="stat"><b id="clearEggs">+0</b><span>Eggs earned</span></div>
+          <div class="stat"><b id="clearNext">0</b><span>Next level speed</span></div>
+        </div>
+        <div class="brag" id="clearBragWrap"><p id="clearBrag"></p><button id="btnClearBrag" class="btn small alt">Copy brag</button></div>
+        <div class="stack">
+          <button id="btnNext" class="btn hot">Next level</button>
+          <div class="row">
+            <button id="btnClearShop" class="btn alt">Packs</button>
+            <button id="btnClearMenu" class="btn alt">Menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="over" class="overlay" hidden>
+      <div class="card">
+        <h2>You got clucked</h2>
+        <p id="overSub"></p>
+        <div class="brag" id="overBragWrap"><p id="overBrag"></p><button id="btnOverBrag" class="btn small alt">Copy brag</button></div>
+        <div class="row">
+          <button id="btnRetry" class="btn hot">Try again</button>
+          <button id="btnOverMenu" class="btn alt">Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pause" class="overlay" hidden>
+      <div class="card">
+        <h2>Paused</h2>
+        <p>The round restarts with a count-in when you come back.</p>
+        <div class="row">
+          <button id="btnResume" class="btn hot">Resume</button>
+          <button id="btnQuit" class="btn alt">Quit to menu</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="controls">
+    <button id="bGrab" class="ctl" aria-label="Take the cup">TAKE<small>F</small></button>
+    <button id="bTap" class="ctl" aria-label="Tap the cup">TAP<small>Space</small></button>
+  </div>
+</div>
+<script src="js/audio.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/game.js"></script>
+<!-- page:end -->
+</body>
+</html>
