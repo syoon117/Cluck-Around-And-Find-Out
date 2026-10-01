@@ -160,104 +160,114 @@ const Sfx = (() => {
     for (let i = 0; i < 9; i++) noise(t + i * 0.018 + Math.random() * 0.01, 0.001, 0.025, 0.5 - i * 0.04, 'bandpass', 2500 + Math.random() * 2500, 3);
     thud(t);
   }
+  function foam(t) { noise(t, 0.004, 0.12, 0.7, 'lowpass', 500, 0.7); tone('sine', 110, t, 0.004, 0.12, 0.4, null, 60); }
+  function knock(t) { tone('sine', 620, t, 0.001, 0.07, 0.5, null, 480); noise(t, 0.001, 0.04, 0.5, 'bandpass', 1100, 3); tone('sine', 300, t, 0.001, 0.1, 0.3); }
+  function crinkle(t) { for (let i = 0; i < 12; i++) noise(t + i * 0.012 + Math.random() * 0.02, 0.001, 0.02, 0.4, 'highpass', 3000 + Math.random() * 3000, 1); slap(t, false); }
+  function splat(t) { slap(t, true); noise(t + 0.01, 0.005, 0.18, 0.6, 'lowpass', 800, 1, null, 200); }
+  function crunch(t) { thud(t); for (let i = 0; i < 8; i++) noise(t + i * 0.015, 0.001, 0.03, 0.35, 'bandpass', 1500 + Math.random() * 2500, 2); }
+  function twang(t) { [82, 110, 147, 196, 247].forEach((f, i) => tone('sawtooth', f, t + i * 0.012, 0.003, 1.2, 0.08)); thud(t); }
+  function spray(t) { clang(t); noise(t + 0.05, 0.03, 0.6, 0.45, 'highpass', 2500, 0.6); }
+  function feedback(t) { thud(t); tone('sine', 2900, t + 0.04, 0.25, 0.35, 0.12); tone('sine', 2905, t + 0.04, 0.25, 0.35, 0.08); }
+  function anvil(t) { clang(t); tone('sine', 70, t, 0.002, 0.5, 1, null, 35); noise(t, 0.001, 0.3, 0.6, 'lowpass', 400, 0.7); }
+  function honk(t) { slap(t, false); bawk(t + 0.03, 0.62); bawk(t + 0.22, 0.6); }
+  function gold(t) { clang(t); [2093, 2637, 3136].forEach((f, i) => tone('sine', f, t + 0.08 + i * 0.07, 0.002, 0.5, 0.08)); }
   function impact(kind, t) {
     if (!ready()) return;
     ({ clang, thud, slap: (tt) => slap(tt, false), wet: (tt) => slap(tt, true), thwop, bonk, boing, clack,
+      foam, knock, crinkle, splat, crunch, twang, spray, feedback, anvil, honk, gold,
+      duck: (tt) => { slap(tt, false); squeak(tt + 0.02, 2.2, { dur: 0.12, hard: 0.3 }); },
       squeak: (tt) => { slap(tt, false); squeak(tt + 0.02, 1.25); } }[kind] || thud)(t);
   }
 
   // ---------- the rubber chicken ----------
-  // Voice: buzzy reed (saw + square) through nasal formants, a little grit, slight vibrato.
-  const SCREAM_FORMANTS = [[1050, 3, 1], [2800, 5, 0.8], [5400, 6, 0.35]];
-  // Honk: lower, wider "ahnk" vowel. This is what a light squeeze sounds like.
-  const HONK_FORMANTS = [[620, 2.5, 0.9], [1250, 3.5, 1], [2500, 4, 0.6], [4600, 3, 0.45]];
-  function voice(dest, formants = SCREAM_FORMANTS) {
+  // The voice is a reed tone built from the harmonic mix measured off a real rubber chicken
+  // (2nd and 3rd harmonics nearly as loud as the fundamental = the nasal honk). A soft squeeze
+  // is closer to a pure tone, a hard squeeze is the full mix. No breath noise, and instead of a
+  // smooth vibrato (which reads as a bird) it gets a small random pitch wobble like real rubber.
+  const HARD = [1, 0.62, 0.97, 0.14, 0.3, 0.38, 0.3, 0.13, 0.1, 0.1, 0.1, 0.1, 0.12, 0.06, 0.05, 0.04];
+  const SOFT = [1, 0.3, 0.14, 0.06, 0.04, 0.03, 0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0, 0, 0];
+  const waves = {};
+  function reedWave(hard) {
+    const k = Math.round(Math.min(1, Math.max(0, hard)) * 4) / 4;
+    if (!waves[k]) {
+      const n = HARD.length + 1, real = new Float32Array(n), imag = new Float32Array(n);
+      for (let i = 1; i < n; i++) imag[i] = SOFT[i - 1] * (1 - k) + HARD[i - 1] * k;
+      waves[k] = ac.createPeriodicWave(real, imag);
+    }
+    return waves[k];
+  }
+  function voice(dest, hard = 1) {
     const out = ac.createGain(); out.gain.value = 0.0001; out.connect(dest || sfxBus);
-    const pre = ac.createGain();
-    const o1 = ac.createOscillator(); o1.type = 'sawtooth';
-    const o2 = ac.createOscillator(); o2.type = 'square'; o2.detune.value = 16;
-    const o2g = ac.createGain(); o2g.gain.value = 0.3;
-    const lfo = ac.createOscillator(); lfo.frequency.value = 6.5;
-    const lfoG = ac.createGain(); lfoG.gain.value = 12;
-    lfo.connect(lfoG); lfoG.connect(o1.frequency); lfoG.connect(o2.frequency);
+    const o = ac.createOscillator(); o.setPeriodicWave(reedWave(hard));
+    // rubber wobble: slow random drift in pitch (a few cents), not a regular vibrato
     const ns = ac.createBufferSource(); ns.buffer = noiseBuf; ns.loop = true;
-    const nf = ac.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.value = 3200; nf.Q.value = 0.8;
-    const ng = ac.createGain(); ng.gain.value = 0.16;
-    ns.connect(nf); nf.connect(ng); ng.connect(pre);
-    o1.connect(pre); o2.connect(o2g); o2g.connect(pre);
-    const ws = ac.createWaveShaper(); ws.curve = distCurve(3);
-    pre.connect(ws);
-    formants.forEach(([f, q, g]) => {
-      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
-      const gg = ac.createGain(); gg.gain.value = g; ws.connect(bp); bp.connect(gg); gg.connect(out);
-    });
-    const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 500;
-    const hg = ac.createGain(); hg.gain.value = 0.12; ws.connect(hp); hp.connect(hg); hg.connect(out);
+    const nlp = ac.createBiquadFilter(); nlp.type = 'lowpass'; nlp.frequency.value = 22; nlp.Q.value = 0.7;
+    const jg = ac.createGain(); jg.gain.value = 60;
+    ns.connect(nlp); nlp.connect(jg); jg.connect(o.detune);
+    const lfo = ac.createOscillator(); lfo.frequency.value = 6;
+    const lfoG = ac.createGain(); lfoG.gain.value = 0; // off unless an effect wants it
+    lfo.connect(lfoG); lfoG.connect(o.frequency);
+    const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 180;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 9000;
+    o.connect(hp); hp.connect(lp); lp.connect(out);
     const t = ac.currentTime;
-    [o1, o2, lfo, ns].forEach((n) => n.start(t));
+    [o, ns, lfo].forEach((n) => n.start(t));
     return {
-      out, freq: [o1.frequency, o2.frequency], lfo, lfoG,
-      stop(at) { [o1, o2, lfo, ns].forEach((n) => { try { n.stop(at + 0.05); } catch (e) {} }); setTimeout(() => out.disconnect(), (at - ac.currentTime + 0.3) * 1000); },
+      out, freq: [o.frequency], lfo, lfoG,
+      stop(at) { [o, ns, lfo].forEach((n) => { try { n.stop(at + 0.05); } catch (e) {} }); setTimeout(() => out.disconnect(), (at - ac.currentTime + 0.3) * 1000); },
     };
   }
 
-  // Short honk: a light squeeze. Used for every normal hit. Low (~500 Hz like the real toy),
-  // buzzy, with a reed flutter, and it sags in pitch instead of chirping up like a mouse.
-  function squeak(t, pm = 1) {
+  // Short squeak for every normal hit. Each one is a different squeeze: pitch, length and how
+  // hard it was squeezed all vary. Shape follows the real toy: rises into the note, then sags.
+  function squeak(t, pm = 1, opts = {}) {
     if (!ready()) return;
-    const p = pm * (0.94 + Math.random() * 0.12);
-    const flutter = ac.createGain(); flutter.gain.value = 0.72; flutter.connect(sfxBus);
-    const fl = ac.createOscillator(); fl.frequency.value = 36;
-    const flg = ac.createGain(); flg.gain.value = 0.28;
-    fl.connect(flg); flg.connect(flutter.gain); fl.start(t); fl.stop(t + 0.45);
-    const v = voice(flutter, HONK_FORMANTS);
-    v.lfoG.gain.value = 5;
-    v.freq.forEach((f) => {
-      f.setValueAtTime(430 * p, t);
-      f.exponentialRampToValueAtTime(560 * p, t + 0.04);
-      f.exponentialRampToValueAtTime(530 * p, t + 0.2);
-      f.exponentialRampToValueAtTime(440 * p, t + 0.32);
-    });
-    const g = v.out.gain;
+    const f = (opts.f || 400 + Math.random() * 330) * pm;
+    const dur = opts.dur || 0.14 + Math.random() * 0.34;
+    const hard = opts.hard ?? 0.5 + Math.random() * 0.5;
+    const v = voice(null, hard);
+    const fr = v.freq[0];
+    fr.setValueAtTime(f * 0.66, t);
+    fr.exponentialRampToValueAtTime(f, t + dur * 0.28);
+    fr.linearRampToValueAtTime(f * 0.86, t + dur * 0.82);
+    fr.exponentialRampToValueAtTime(f * 0.66, t + dur);
+    const g = v.out.gain, peak = opts.vol || 0.42 + 0.12 * hard;
     g.setValueAtTime(0.0001, t);
-    g.exponentialRampToValueAtTime(0.5, t + 0.02);
-    g.setValueAtTime(0.44, t + 0.22);
-    g.exponentialRampToValueAtTime(0.0001, t + 0.34);
-    v.stop(t + 0.4);
-    noise(t, 0.002, 0.03, 0.12, 'bandpass', 1500, 2); // rubber creak as it gets squeezed
+    g.exponentialRampToValueAtTime(peak, t + 0.018);
+    g.setValueAtTime(peak * 0.92, t + dur * 0.78);
+    g.exponentialRampToValueAtTime(0.0001, t + dur + 0.02);
+    v.stop(t + dur + 0.06);
   }
   // A chicken "bawk?" for speech bubbles.
   function bawk(t, pm = 1) {
     if (!ready()) return;
-    const v = voice();
-    v.lfoG.gain.value = 3;
-    v.freq.forEach((f) => { f.setValueAtTime(520 * pm, t); f.exponentialRampToValueAtTime(700 * pm, t + 0.04); f.exponentialRampToValueAtTime(380 * pm, t + 0.14); });
+    const v = voice(null, 0.75);
+    v.freq.forEach((f) => { f.setValueAtTime(480 * pm, t); f.exponentialRampToValueAtTime(660 * pm, t + 0.04); f.exponentialRampToValueAtTime(380 * pm, t + 0.15); });
     const g = v.out.gain;
-    g.setValueAtTime(0.0001, t); g.exponentialRampToValueAtTime(0.2, t + 0.01); g.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    g.setValueAtTime(0.0001, t); g.exponentialRampToValueAtTime(0.28, t + 0.012); g.exponentialRampToValueAtTime(0.0001, t + 0.17);
     v.stop(t + 0.2);
   }
 
-  // The long HAAAAWWWWW. Controlled live while the player squeezes.
+  // The long HAAAAWWWWW, controlled live while the player squeezes. Like the real toy it starts
+  // high and slowly sags as the air runs out; letting go drops the pitch as it dies.
   function scream(opts = {}) {
     if (!ready()) return null;
     const pm = opts.pitch || 1;
-    const v = voice();
-    v.lfoG.gain.value = opts.vibrato || 22;
+    const v = voice(null, 1);
+    v.lfoG.gain.value = opts.vibrato || 0;
     if (opts.lfoRate) v.lfo.frequency.value = opts.lfoRate;
-    let cur = 0;
+    const t0 = ac.currentTime;
     const api = {
-      // amt 0..1 is squeeze strength; pitchMul for helium/bass/doppler tweaks
-      set(amt, pitchMul = 1) {
-        const tt = ac.currentTime;
-        const f = (640 + 380 * amt) * pm * pitchMul;
-        v.freq.forEach((fr) => fr.setTargetAtTime(f, tt, 0.04));
-        v.out.gain.setTargetAtTime(amt > 0.02 ? 0.12 + 0.3 * Math.min(1, amt) : 0.0001, tt, 0.035);
-        cur = amt;
+      // amt 0..1 is squeeze strength; pitchMul for helium/bass/doppler tweaks; `at` for offline renders
+      set(amt, pitchMul = 1, at = ac.currentTime) {
+        const drift = Math.max(0.8, 1 - 0.045 * (at - t0));
+        const f = (600 + 350 * amt) * pm * pitchMul * drift;
+        v.freq.forEach((fr) => fr.setTargetAtTime(f, at, 0.04));
+        v.out.gain.setTargetAtTime(amt > 0.02 ? 0.14 + 0.34 * Math.min(1, amt) : 0.0001, at, 0.035);
       },
-      release() {
-        const tt = ac.currentTime;
-        v.freq.forEach((fr) => fr.setTargetAtTime(420 * pm, tt, 0.06));
-        v.out.gain.setTargetAtTime(0.0001, tt, 0.05);
+      release(at = ac.currentTime) {
+        v.freq.forEach((fr) => fr.setTargetAtTime(fr.value * 0.6 || 380 * pm, at, 0.07));
+        v.out.gain.setTargetAtTime(0.0001, at, 0.06);
       },
       fadeOut(dur, pitchTo) {
         const tt = ac.currentTime;
@@ -266,7 +276,7 @@ const Sfx = (() => {
         v.out.gain.exponentialRampToValueAtTime(0.0001, tt + dur);
         v.stop(tt + dur + 0.1);
       },
-      stop() { const tt = ac.currentTime; v.out.gain.setTargetAtTime(0.0001, tt, 0.03); v.stop(tt + 0.25); },
+      stop(at = ac.currentTime) { v.out.gain.setTargetAtTime(0.0001, at, 0.03); v.stop(at + 0.25); },
     };
     if (opts.distort) {
       // Bass-boosted: clip the output hard.
@@ -279,7 +289,7 @@ const Sfx = (() => {
   // The rubber chicken sucking air back in after a squeeze.
   function wheeze(t, dur = 0.45) {
     if (!ready()) return;
-    noise(t, dur * 0.7, dur * 0.3, 0.16, 'bandpass', 700, 3, null, 2400);
+    noise(t, dur * 0.7, dur * 0.3, 0.07, 'bandpass', 700, 3, null, 2400);
     tone('sine', 1900, t + 0.05, dur * 0.6, dur * 0.3, 0.03, null, 2600);
   }
   function raspberry(t) {
@@ -320,8 +330,8 @@ const Sfx = (() => {
     // the snap
     tone('sine', 90, t + 5, 0.005, 1.2, 0.9, ib, 30);
     noise(t + 5, 0.002, 0.5, 0.6, 'lowpass', 2500, 0.7, ib);
-    const v = voice(ib); v.lfoG.gain.value = 25;
-    v.freq.forEach((f) => { f.setValueAtTime(500, t + 5); f.exponentialRampToValueAtTime(1050, t + 5.12); f.setValueAtTime(1050, t + 5.9); f.exponentialRampToValueAtTime(700, t + 6.4); });
+    const v = voice(ib, 1);
+    v.freq.forEach((f) => { f.setValueAtTime(560, t + 5); f.exponentialRampToValueAtTime(950, t + 5.1); f.linearRampToValueAtTime(880, t + 5.95); f.exponentialRampToValueAtTime(520, t + 6.45); });
     const g = v.out.gain;
     g.setValueAtTime(0.0001, t + 5); g.exponentialRampToValueAtTime(0.42, t + 5.05); g.setValueAtTime(0.42, t + 6); g.exponentialRampToValueAtTime(0.0001, t + 6.5);
     v.stop(t + 6.6);

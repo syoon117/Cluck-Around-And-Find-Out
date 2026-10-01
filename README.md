@@ -32,14 +32,23 @@ You and the chicken take turns tapping a plastic cup that covers a bell. On your
 
 The first time you hit Play in a session there's a ~7 second cold open: a beaten rubber chicken on the floor, a slow push-in with a drone and heartbeat, its eye snaps open, and it comes back screaming for revenge. Tap or press any key to skip it. The **Intro** toggle on the title screen turns it off for good.
 
+## Items and Mystery Packs
+
+There are 44 things to get smacked with, in five tiers: Starter (Bare Hand, Cafeteria Tray), Common, Rare, Epic and Legendary. Examples: frying pan, rubber duck, flip phone, eggplant, electric guitar, rotisserie chicken, toilet seat, fire extinguisher, grandma's purse, participation trophy, anvil, the kitchen sink, a live goose, the Purple Wobbler. Each item has its own drawing and impact sound.
+
+- The chicken hits you with **any** item, owned or not. The caption tells you the rarity and whether it's in your collection yet.
+- You smack the chicken with a random item **you own**.
+- A **Mystery Pack** gives 5 random items, rarity-weighted (Common 60%, Rare 27%, Epic 10%, Legendary 3%), with at least one Rare or better. Duplicates refund eggs (3 / 8 / 20 / 50 by rarity).
+- The Packs screen shows your collection (owned items, silhouettes for the rest) and the finishers.
+
 ## Economy (in-game eggs for now)
 
-Eggs are earned by smacking (+3), dodging (+1) and clearing levels (+10 + 5×level). They buy:
+Eggs are earned by smacking (+3), dodging (+1) and clearing levels (+10 + 5×level). New players start with 60, enough for one pack. Eggs buy:
 
-- **Smack packs**: weapons added to your random pool (Kitchen, Hardware Store, Laundry Day, Cursed).
+- **Mystery Packs**: 60 eggs each.
 - **Finishers**: Choke the Chicken (free), Window Yeet, Helium Huff, Bass Boosted.
 
-All packs and prices live in `PACKS` and `FINISHERS` at the top of `js/game.js`, keyed by a stable `id`, so they can map 1:1 to in-app purchase product IDs later.
+The catalog (`WEAPONS`, `RARITY`, `MYSTERY`) is at the top of `js/game.js`. All pack purchases go through `buyPack()`. For the App Store build, replace its egg check with an in-app purchase of `MYSTERY.product` (`mystery_pack_5`, e.g. $0.99) and call `grantPack()` when the purchase succeeds.
 
 ## Running it
 
@@ -54,15 +63,15 @@ All graphics are drawn on a canvas and every sound is synthesized with the Web A
 ## Files
 
 - `index.html`: page, menus, styles
-- `js/audio.js`: synthesized sounds (cup taps, bell, weapon impacts, the short squeak on hits, the long scream in finishers, the backing groove)
-- `js/draw.js`: canvas drawing (room, chicken, gloves, cup, bell, weapons, particles)
+- `js/audio.js`: synthesized sounds (cup taps, bell, weapon impacts, the short squeak on hits, the long scream in finishers, the backing groove). The rubber chicken voice is built from the harmonic mix measured off a real rubber chicken recording. `Sfx.init(offlineContext)` renders sounds offline for checking them without speakers.
+- `js/draw.js`: canvas drawing (room, chicken, gloves, cup, bell, all 44 items, particles)
 - `js/game.js`: rhythm engine, chicken AI, smacks, finishers, shop, save data (localStorage)
 
 ## Toward the App Store
 
 The plan is to wrap this folder as a native app with [Capacitor](https://capacitorjs.com/) (`npx cap add ios`, then point `webDir` at this folder). Things to handle when you get there:
 
-- **Payments**: Apple requires its own in-app purchase system for digital goods like these packs. Use a Capacitor IAP plugin (for example RevenueCat) and grant the pack `id` when a purchase succeeds. Don't use Stripe or a web checkout for packs inside the iOS app.
+- **Payments**: Apple requires its own in-app purchase system for digital goods like these packs. Use a Capacitor IAP plugin (for example RevenueCat) and call `grantPack()` when a `mystery_pack_5` purchase succeeds. Randomized paid packs ("loot boxes") also have to show the odds before purchase under App Store rules, and some countries restrict or ban them. The odds are listed above and in `RARITY`. Don't use Stripe or a web checkout for packs inside the iOS app.
 - **Fonts**: the menus load two Google Fonts over the network. Bundle the font files locally for an offline app.
 - **Age rating**: the humor (and the Cursed Pack) will likely land at 12+ or 17+ in the App Store questionnaire. Answer it honestly to avoid a rejection.
 - **Save data** is in `localStorage`, which persists inside a Capacitor WebView. Add cloud save later if you want it to sync across devices.

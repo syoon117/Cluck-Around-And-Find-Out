@@ -9,27 +9,68 @@
   const $ = (id) => document.getElementById(id);
 
   // ---------- content ----------
+  // Everything the chicken can hit you with. You collect them from Mystery Packs and smack it back.
+  // r: rarity (starter items are owned from the start). snd: impact sound in audio.js.
   const WEAPONS = {
-    hand: { name: 'Bare Hand', snd: 'slap' },
-    tray: { name: 'Cafeteria Tray', snd: 'clang' },
-    pan: { name: 'Frying Pan', snd: 'clang' },
-    baguette: { name: 'Baguette', snd: 'thud' },
-    plunger: { name: 'Plunger', snd: 'thwop' },
-    cone: { name: 'Traffic Cone', snd: 'bonk' },
-    keyboard: { name: 'Keyboard', snd: 'clack' },
-    sock: { name: 'Wet Sock', snd: 'wet' },
-    chancla: { name: 'Chancla', snd: 'slap' },
-    fish: { name: 'Rubber Fish', snd: 'wet' },
-    wobbler: { name: 'The Purple Wobbler', snd: 'boing' },
-    junior: { name: 'Chicken Jr.', snd: 'squeak' },
+    hand: { name: 'Bare Hand', r: 'starter', snd: 'slap' },
+    tray: { name: 'Cafeteria Tray', r: 'starter', snd: 'clang' },
+    // common
+    pan: { name: 'Frying Pan', r: 'common', snd: 'clang' },
+    baguette: { name: 'Baguette', r: 'common', snd: 'crunch' },
+    plunger: { name: 'Plunger', r: 'common', snd: 'thwop' },
+    sock: { name: 'Wet Sock', r: 'common', snd: 'wet' },
+    duck: { name: 'Rubber Duck', r: 'common', snd: 'duck' },
+    noodle: { name: 'Pool Noodle', r: 'common', snd: 'foam' },
+    spoon: { name: 'Wooden Spoon', r: 'common', snd: 'knock' },
+    newspaper: { name: 'Rolled-Up Newspaper', r: 'common', snd: 'crinkle' },
+    banana: { name: 'Banana', r: 'common', snd: 'splat' },
+    spatula: { name: 'Spatula', r: 'common', snd: 'slap' },
+    sponge: { name: 'Soggy Sponge', r: 'common', snd: 'wet' },
+    phone: { name: 'Flip Phone', r: 'common', snd: 'clack' },
+    cucumber: { name: 'Cucumber', r: 'common', snd: 'knock' },
+    brush: { name: 'Toilet Brush', r: 'common', snd: 'wet' },
+    // rare
+    cone: { name: 'Traffic Cone', r: 'rare', snd: 'bonk' },
+    keyboard: { name: 'Keyboard', r: 'rare', snd: 'clack' },
+    chancla: { name: 'Chancla', r: 'rare', snd: 'slap' },
+    fish: { name: 'Rubber Fish', r: 'rare', snd: 'wet' },
+    eggplant: { name: 'Eggplant', r: 'rare', snd: 'splat' },
+    bat: { name: 'Foam Bat', r: 'rare', snd: 'foam' },
+    guitar: { name: 'Electric Guitar', r: 'rare', snd: 'twang', len: 300 },
+    mop: { name: 'Wet Mop', r: 'rare', snd: 'wet', len: 260 },
+    shovel: { name: 'Shovel', r: 'rare', snd: 'clang' },
+    roast: { name: 'Rotisserie Chicken', r: 'rare', snd: 'splat' },
+    skateboard: { name: 'Skateboard', r: 'rare', snd: 'knock', len: 250 },
+    croissant: { name: 'Croissant', r: 'rare', snd: 'crunch' },
+    racket: { name: 'Tennis Racket', r: 'rare', snd: 'knock' },
+    toiletseat: { name: 'Toilet Seat', r: 'rare', snd: 'knock' },
+    // epic
+    junior: { name: 'Chicken Jr.', r: 'epic', snd: 'squeak' },
+    stopsign: { name: 'Stop Sign', r: 'epic', snd: 'clang', len: 250 },
+    extinguisher: { name: 'Fire Extinguisher', r: 'epic', snd: 'spray' },
+    bowlingpin: { name: 'Bowling Pin', r: 'epic', snd: 'knock' },
+    purse: { name: "Grandma's Purse", r: 'epic', snd: 'thud', len: 250 },
+    mic: { name: 'Microphone', r: 'epic', snd: 'feedback' },
+    trophy: { name: 'Participation Trophy', r: 'epic', snd: 'clang' },
+    lollipop: { name: 'Giant Lollipop', r: 'epic', snd: 'knock', len: 250 },
+    // legendary
+    wobbler: { name: 'The Purple Wobbler', r: 'legendary', snd: 'boing' },
+    anvil: { name: 'Anvil', r: 'legendary', snd: 'anvil' },
+    sink: { name: 'The Kitchen Sink', r: 'legendary', snd: 'anvil', len: 270 },
+    goldpan: { name: 'Golden Frying Pan', r: 'legendary', snd: 'gold' },
+    goose: { name: 'A Live Goose', r: 'legendary', snd: 'honk', len: 250 },
+    cactus: { name: 'Cactus', r: 'legendary', snd: 'thud' },
   };
-  const PACKS = [
-    { id: 'starter', name: 'Starter Kit', price: 0, items: ['hand', 'tray'], blurb: 'Your hand, and the tray from the original video.' },
-    { id: 'kitchen', name: 'Kitchen Pack', price: 30, items: ['pan', 'baguette'], blurb: 'Classic cookware violence.' },
-    { id: 'hardware', name: 'Hardware Store Pack', price: 50, items: ['plunger', 'cone', 'keyboard'], blurb: 'Aisle 9 has everything.' },
-    { id: 'laundry', name: 'Laundry Day Pack', price: 60, items: ['sock', 'chancla'], blurb: 'Damp, and very motivated.' },
-    { id: 'cursed', name: 'Cursed Pack', price: 90, items: ['fish', 'wobbler', 'junior'], blurb: "Don't ask where the chicken found these." },
-  ];
+  const RARITY = {
+    starter: { label: 'Starter', color: '#fff3c4', refund: 0 },
+    common: { label: 'Common', color: '#cfd6dc', weight: 60, refund: 3 },
+    rare: { label: 'Rare', color: '#4da3ff', weight: 27, refund: 8 },
+    epic: { label: 'Epic', color: '#b56bff', weight: 10, refund: 20 },
+    legendary: { label: 'Legendary', color: '#ffb800', weight: 3, refund: 50 },
+  };
+  // One pack type: 5 random items, at least one Rare or better. Duplicates turn into eggs.
+  // `product` is the in-app purchase id to sell it under in the App Store build.
+  const MYSTERY = { name: 'Mystery Pack', count: 5, price: 60, product: 'mystery_pack_5' };
   const FINISHERS = [
     { id: 'choke', name: 'Choke the Chicken', price: 0, blurb: 'Hold to squeeze. The classic HAAAWWW.' },
     { id: 'yeet', name: 'Window Yeet', price: 45, blurb: 'Wind it up, let go, straight out the window.' },
@@ -56,11 +97,14 @@
 
   // ---------- save data ----------
   const SAVE_KEY = 'cluck-around-save-v1';
-  const DEFAULTS = { eggs: 0, packs: { starter: true }, fins: { choke: true }, fin: 'choke', best: 1, mode: 'ranked', ramp: 2, customBest: {}, music: true, sfx: true, intro: true, tutorialDone: false };
+  const DEFAULTS = { eggs: 60, items: { hand: true, tray: true }, packs: {}, fins: { choke: true }, fin: 'choke', best: 1, mode: 'ranked', ramp: 2, customBest: {}, music: true, sfx: true, intro: true, tutorialDone: false };
   let save = (() => {
-    try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}'); return Object.assign({}, DEFAULTS, s, { packs: Object.assign({ starter: true }, s.packs), fins: Object.assign({ choke: true }, s.fins), customBest: Object.assign({}, s.customBest) }); }
+    try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}'); return Object.assign({}, DEFAULTS, s, { packs: Object.assign({ starter: true }, s.packs), fins: Object.assign({ choke: true }, s.fins), customBest: Object.assign({}, s.customBest), items: Object.assign({ hand: true, tray: true }, s.items) }); }
     catch (e) { return JSON.parse(JSON.stringify(DEFAULTS)); }
   })();
+  // older saves bought themed packs; hand over their items
+  const OLD_PACKS = { kitchen: ['pan', 'baguette'], hardware: ['plunger', 'cone', 'keyboard'], laundry: ['sock', 'chancla'], cursed: ['fish', 'wobbler', 'junior'] };
+  Object.keys(OLD_PACKS).forEach((k) => { if (save.packs && save.packs[k]) OLD_PACKS[k].forEach((w) => (save.items[w] = true)); });
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* storage blocked: progress lasts this session */ } };
 
   // ---------- helpers ----------
@@ -116,7 +160,7 @@
     const table = [0.08, 0.2, 0.4, 0.58, 0.72, 0.8];
     return Math.max(0.05, table[Math.min(s, 5)] - 0.02 * (G.level - 1));
   }
-  const playerPool = () => PACKS.filter((p) => save.packs[p.id]).flatMap((p) => p.items);
+  const playerPool = () => Object.keys(WEAPONS).filter((k) => save.items[k]);
   const CHICKEN_POOL = Object.keys(WEAPONS).filter((k) => k !== 'hand');
 
   // ---------- hand motion ----------
@@ -235,6 +279,10 @@
     newRound(0.7);
     if (lv === 1 && !save.tutorialDone) G.banner = { text: 'Tap on YOUR beat, when the ring hits the cup', until: Sfx.now() + 6 };
     else G.banner = { text: `${G.name} · ${Math.round(60 / G.T)} BPM`, until: Sfx.now() + 2.4 };
+  }
+  function withArticle(name) {
+    if (/^(the|a|an|grandma's|bare) /i.test(name)) return name.replace(/^The /, 'the ').replace(/^A /, 'a ');
+    return `${/^[aeiou]/i.test(name) ? 'an' : 'a'} ${name}`;
   }
   function romanize(n) { return ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][n] || String(n); }
 
@@ -483,7 +531,7 @@
     if (!f || f.phase !== 'play') { if (f) f.queued = down; return; }
     if (down && !f.holding) {
       f.holding = true; f.heldT = 0; f.hint = false;
-      const opts = f.type === 'bass' ? { pitch: 0.42, distort: true, vibrato: 30, lfoRate: 3.5 } : f.type === 'helium' ? { pitch: 1.1, vibrato: 30 } : {};
+      const opts = f.type === 'bass' ? { pitch: 0.42, distort: true, vibrato: 30, lfoRate: 3.5 } : f.type === 'helium' ? { pitch: 1.1 } : {};
       f.scream = Sfx.scream(opts);
     } else if (!down && f.holding) {
       f.holding = false;
@@ -764,7 +812,7 @@
     D.burst(ctx, 380, 790, 120 * pulse, '#e8432e', now * 0.5);
     D.text(ctx, 'SMACK IT!', 380, 790, 50 * pulse, '#fff3c4');
     const nm = WEAPONS[r.weapon].name;
-    D.text(ctx, `with ${/^(the|bare)/i.test(nm) ? '' : /^[aeiou]/i.test(nm) ? 'an ' : 'a '}${nm.replace(/^Bare /, 'your bare ')}`, 380, 880, 24, '#ffd84a', { font: "'Barlow Semi Condensed', sans-serif", weight: 800 });
+    D.text(ctx, `with ${nm === 'Bare Hand' ? 'your bare hand' : withArticle(nm)}`, 380, 880, 24, '#ffd84a', { font: "'Barlow Semi Condensed', sans-serif", weight: 800 });
   }
 
   function drawSmack(now) {
@@ -810,7 +858,9 @@
           ctx.beginPath(); for (let j = 0; j < 10; j++) { const rr = j % 2 ? 9 : 22; const an = j / 10 * Math.PI * 2; ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); }
           ctx.closePath(); D.fs(ctx, '#ffe14d', INK, 3); ctx.restore();
         }
-        D.text(ctx, `${G.name} hit you with ${/^[AEIOU]/i.test(WEAPONS[s.weapon].name) ? 'an' : 'a'} ${WEAPONS[s.weapon].name.replace(/^The /, '')}`, 380, 880, 26, '#fff3c4', { font: "'Barlow Semi Condensed', sans-serif", weight: 800 });
+        const wn = WEAPONS[s.weapon], rr = RARITY[wn.r];
+        D.text(ctx, `${G.name} hit you with ${withArticle(wn.name)}`, 380, 868, 26, '#fff3c4', { font: "'Barlow Semi Condensed', sans-serif", weight: 800 });
+        D.text(ctx, save.items[s.weapon] ? rr.label.toUpperCase() : `${rr.label.toUpperCase()} · NOT IN YOUR COLLECTION YET`, 380, 898, 18, rr.color, { font: "'Barlow Semi Condensed', sans-serif", weight: 800, lw: 4 });
       }
     }
   }
@@ -919,7 +969,7 @@
   }
 
   // ---------- overlays / DOM ----------
-  const overlays = ['title', 'howto', 'shop', 'clear', 'over', 'pause'];
+  const overlays = ['title', 'howto', 'shop', 'clear', 'over', 'pause', 'packOpen'];
   function showOverlay(id) {
     overlays.forEach((o) => { $(o).hidden = o !== id; });
     document.body.classList.toggle('in-menu', !!id);
@@ -959,12 +1009,14 @@
     $('tgSfx').setAttribute('aria-pressed', String(save.sfx));
     $('tgIntro').setAttribute('aria-pressed', String(save.intro));
   }
-  function weaponIcon(id) {
+  function weaponIcon(id, locked) {
     const c = document.createElement('canvas');
     c.width = 112; c.height = 112; c.className = 'icon';
     const x = c.getContext('2d');
-    x.translate(56, 104); x.rotate(0.5); x.scale(0.42, 0.42);
+    const k = Math.min(0.42, 88 / (WEAPONS[id].len || 210));
+    x.translate(56, 100); x.rotate(0.5); x.scale(k, k);
     D.weapon(x, id, 0.3);
+    if (locked) { x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = 'rgba(29,18,10,0.55)'; x.fillRect(0, 0, 112, 112); }
     return c;
   }
   function finIcon(id) {
@@ -977,27 +1029,22 @@
   }
   function renderShop() {
     $('shopEggs').textContent = save.eggs;
-    const pl = $('packList'); pl.innerHTML = '';
-    PACKS.forEach((p) => {
-      const owned = !!save.packs[p.id];
-      const li = document.createElement('li'); li.className = 'item' + (owned ? ' owned' : '');
-      const icons = document.createElement('div'); icons.className = 'icons';
-      p.items.forEach((w) => icons.appendChild(weaponIcon(w)));
-      const body = document.createElement('div'); body.className = 'item-body';
-      body.innerHTML = `<h3></h3><p class="contents"></p><p class="blurb"></p>`;
-      body.querySelector('h3').textContent = p.name;
-      body.querySelector('.contents').textContent = p.items.map((w) => WEAPONS[w].name).join(' · ');
-      body.querySelector('.blurb').textContent = p.blurb;
-      const btn = document.createElement('button'); btn.className = 'btn small';
-      if (owned) { btn.textContent = 'Owned'; btn.disabled = true; }
-      else {
-        btn.innerHTML = `<span class="egg-dot"></span>${p.price}`;
-        btn.setAttribute('aria-label', `Buy ${p.name} for ${p.price} eggs`);
-        if (save.eggs < p.price) btn.classList.add('short');
-        btn.onclick = () => buy('packs', p);
-      }
-      li.append(icons, body, btn); pl.appendChild(li);
-    });
+    const ids = Object.keys(WEAPONS);
+    const owned = ids.filter((k) => save.items[k]).length;
+    $('collCount').textContent = `${owned} / ${ids.length}`;
+    $('btnOpenPack').innerHTML = `Open a pack <span class="price"><span class="egg-dot"></span>${MYSTERY.price}</span>`;
+    $('btnOpenPack').classList.toggle('short', save.eggs < MYSTERY.price);
+    const grid = $('collGrid'); grid.innerHTML = '';
+    ['starter', 'common', 'rare', 'epic', 'legendary'].forEach((r) => ids.filter((k) => WEAPONS[k].r === r).forEach((k) => {
+      const have = !!save.items[k];
+      const li = document.createElement('li'); li.className = 'tile' + (have ? '' : ' locked');
+      li.style.setProperty('--rar', RARITY[r].color);
+      li.appendChild(weaponIcon(k, !have));
+      const nm = document.createElement('span'); nm.textContent = have ? WEAPONS[k].name : '???';
+      li.appendChild(nm);
+      li.title = have ? `${WEAPONS[k].name} · ${RARITY[r].label}` : `Locked · ${RARITY[r].label}`;
+      grid.appendChild(li);
+    }));
     const fl = $('finList'); fl.innerHTML = '';
     FINISHERS.forEach((f) => {
       const owned = !!save.fins[f.id];
@@ -1021,6 +1068,57 @@
       li.append(icons, body, btn); fl.appendChild(li);
     });
   }
+  function rollItem(minRarity) {
+    const tiers = ['common', 'rare', 'epic', 'legendary'].filter((r) => !minRarity || r !== 'common');
+    const total = tiers.reduce((a, r) => a + RARITY[r].weight, 0);
+    let x = Math.random() * total, tier = tiers[0];
+    for (const r of tiers) { if ((x -= RARITY[r].weight) < 0) { tier = r; break; } }
+    return pick(Object.keys(WEAPONS).filter((k) => WEAPONS[k].r === tier));
+  }
+  // Single entry point for buying a pack. In the App Store build, swap the egg check for an
+  // in-app purchase of MYSTERY.product and call grantPack() when the purchase succeeds.
+  function buyPack() {
+    const msg = $('shopMsg');
+    if (save.eggs < MYSTERY.price) { msg.textContent = `You need ${MYSTERY.price - save.eggs} more eggs. Smack the chicken to earn them.`; return; }
+    save.eggs -= MYSTERY.price;
+    grantPack();
+  }
+  function grantPack() {
+    Sfx.init();
+    const rolls = [];
+    for (let i = 0; i < MYSTERY.count; i++) rolls.push(rollItem(i === MYSTERY.count - 1 && !rolls.some((k) => WEAPONS[k].r !== 'common')));
+    let refund = 0;
+    const result = rolls.map((k) => {
+      const isNew = !save.items[k];
+      save.items[k] = true;
+      const back = isNew ? 0 : RARITY[WEAPONS[k].r].refund;
+      refund += back;
+      return { k, isNew, back };
+    });
+    save.eggs += refund;
+    persist();
+    showPack(result, refund);
+  }
+  function showPack(result, refund) {
+    const row = $('packCards'); row.innerHTML = '';
+    const t0 = Sfx.now();
+    result.forEach(({ k, isNew, back }, i) => {
+      const w = WEAPONS[k], r = RARITY[w.r];
+      const card = document.createElement('li'); card.className = `pcard r-${w.r}`;
+      card.style.setProperty('--rar', r.color); card.style.animationDelay = `${0.15 + i * 0.4}s`;
+      card.appendChild(weaponIcon(k));
+      const nm = document.createElement('b'); nm.textContent = w.name;
+      const tag = document.createElement('span'); tag.className = 'rar'; tag.textContent = r.label;
+      const st = document.createElement('span'); st.className = isNew ? 'new' : 'dupe'; st.textContent = isNew ? 'NEW' : `Dupe +${back} eggs`;
+      card.append(nm, tag, st); row.appendChild(card);
+      const at = t0 + 0.15 + i * 0.4;
+      if (w.r === 'legendary') Sfx.fanfare(at); else if (w.r === 'epic') { Sfx.coin(at); Sfx.coin(at + 0.12); } else Sfx.squeak(at, 1 + i * 0.08, { dur: 0.16, hard: 0.6 });
+    });
+    $('packSummary').textContent = refund ? `Duplicates paid back ${refund} eggs.` : 'Every one of them is going in your smack pool.';
+    $('btnPackAgain').innerHTML = `Open another <span class="price"><span class="egg-dot"></span>${MYSTERY.price}</span>`;
+    $('btnPackAgain').disabled = save.eggs < MYSTERY.price;
+    showOverlay('packOpen');
+  }
   function buy(kind, item) {
     const msg = $('shopMsg');
     if (save.eggs < item.price) {
@@ -1032,7 +1130,7 @@
     if (kind === 'fins') save.fin = item.id;
     persist();
     Sfx.coin(Sfx.now()); Sfx.squeak(Sfx.now() + 0.2);
-    msg.textContent = kind === 'fins' ? `${item.name} unlocked and equipped.` : `${item.name} unlocked. Its weapons are now in your random pool.`;
+    msg.textContent = `${item.name} unlocked and equipped.`;
     renderShop();
   }
 
@@ -1058,6 +1156,9 @@
   on('btnRetry', () => startLevel(G.level));
   on('btnOverMenu', () => { G.scene = 'title'; showOverlay('title'); });
   on('btnResume', resume);
+  on('btnOpenPack', buyPack);
+  on('btnPackAgain', buyPack);
+  on('btnPackDone', () => { $('shopMsg').textContent = ''; showOverlay('shop'); });
   on('btnClearBrag', (e) => copyBrag('clearBrag', e.currentTarget));
   on('btnOverBrag', (e) => copyBrag('overBrag', e.currentTarget));
   on('btnQuit', () => { G.paused = false; Sfx.resume(); G.fin = null; G.smack = null; G.ready = null; G.bubble = null; G.scene = 'title'; showOverlay('title'); });
@@ -1100,7 +1201,7 @@
   });
 
   // test hook (used by the automated smoke test; harmless in play)
-  window.__cluck = { G, save, beginGame, startLevel, startFinisher, readySmack, tempoFor, rankFor, press, finHold, WEAPONS, PACKS, FINISHERS };
+  window.__cluck = { G, save, beginGame, startLevel, startFinisher, readySmack, tempoFor, rankFor, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
 
   showOverlay('title');
   requestAnimationFrame(frame);
