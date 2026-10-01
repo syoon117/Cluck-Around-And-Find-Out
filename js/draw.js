@@ -202,14 +202,17 @@ const D = {
     if (c.blush) { ctx.fillStyle = 'rgba(255,80,80,0.35)'; D.ellipse(ctx, -36, 12, 10, 6); ctx.fill(); D.ellipse(ctx, 36, 12, 10, 6); ctx.fill(); }
     D.eyes(ctx, c);
     // beak + mouth
-    const m = Math.max(0.15, c.mouth || 0);
-    const open = 6 + 34 * m;
-    ctx.beginPath(); ctx.ellipse(0, 22 + open * 0.45, 17 + 6 * m, open * 0.55 + 2, 0, 0, Math.PI * 2); D.fs(ctx, '#7a0f1a', s.line, 4);
-    ctx.fillStyle = '#e5455a'; D.ellipse(ctx, 0, 22 + open * 0.75, 9 + 4 * m, 4 + 3 * m); ctx.fill();
+    // mouth 0 = beak shut; it only opens while the chicken is making a sound
+    const m = Math.min(1, Math.max(0, c.mouth || 0));
+    const open = 36 * m;
+    if (m > 0.03) {
+      ctx.beginPath(); ctx.ellipse(0, 20 + open * 0.5, 15 + 6 * m, open * 0.5 + 3, 0, 0, Math.PI * 2); D.fs(ctx, '#7a0f1a', s.line, 4);
+      ctx.fillStyle = '#e5455a'; D.ellipse(ctx, 0, 20 + open * 0.8, 8 + 4 * m, 2 + 3 * m); ctx.fill();
+    }
+    ctx.beginPath(); ctx.moveTo(-19, 19 + open); ctx.quadraticCurveTo(0, 15 + open, 19, 19 + open); ctx.lineTo(0, 34 + open); ctx.closePath(); D.fs(ctx, s.beak, s.line, 4);
     ctx.beginPath(); ctx.moveTo(-26, 10); ctx.quadraticCurveTo(0, 2, 26, 10); ctx.lineTo(0, 28); ctx.closePath(); D.fs(ctx, s.beak, s.line, 4);
-    ctx.beginPath(); ctx.moveTo(-20, 22 + open); ctx.quadraticCurveTo(0, 18 + open, 20, 22 + open); ctx.lineTo(0, 36 + open); ctx.closePath(); D.fs(ctx, s.beak, s.line, 4);
     // wattle
-    ctx.beginPath(); ctx.moveTo(-8, 34 + open); ctx.quadraticCurveTo(-16, 62 + open, 0, 64 + open); ctx.quadraticCurveTo(16, 62 + open, 8, 34 + open); D.fs(ctx, s.comb, s.line, 4);
+    ctx.beginPath(); ctx.moveTo(-8, 32 + open); ctx.quadraticCurveTo(-16, 60 + open, 0, 62 + open); ctx.quadraticCurveTo(16, 60 + open, 8, 32 + open); D.fs(ctx, s.comb, s.line, 4);
     ctx.restore();
     ctx.restore();
     return { headX: c.x, headY: c.y + hy * (c.scale || 1) * (c.sy || 1) };

@@ -190,13 +190,13 @@
     ctx.fillStyle = 'rgba(0,0,0,0.35)'; D.ellipse(ctx, 450, 735, 190, 26); ctx.fill();
     if (lying) {
       const blink = el > 4.6;
-      D.chicken(ctx, { x: 380, y: 700, scale: 0.8, tilt: 1.45, neck: 0, mouth: 0.25, eyes: blink ? 'angry' : 'x', look: 1, skin: 0, t: 0, legs: true });
+      D.chicken(ctx, { x: 380, y: 700, scale: 0.8, tilt: 1.45, neck: 0, mouth: 0.1, eyes: blink ? 'angry' : 'x', look: 1, skin: 0, t: 0, legs: true });
       if (el > 4.6 && el < 4.9) { ctx.fillStyle = 'rgba(255,40,40,0.8)'; D.burst(ctx, head.x - 10, head.y - 18, 14, '#ff3b1f', el * 8); }
     } else {
       const u = clamp((el - 5) / 0.35, 0, 1);
       const scream = el < 6.4;
       D.chicken(ctx, { x: 380, y: 640 - Math.sin(u * Math.PI) * 140, scale: 0.8, tilt: 1.45 * (1 - easeOut(u)) + Math.sin(el * 30) * 0.03 * (scream ? 1 : 0),
-        neck: scream ? 0.55 : 0.1, mouth: scream ? 1 : 0.4, eyes: 'angry', skin: 0, t: el, legs: true });
+        neck: scream ? 0.55 : 0.1, mouth: scream ? 1 : 0, eyes: 'angry', skin: 0, t: el, legs: true });
     }
     ctx.restore();
     // letterbox, captions, fades (screen-ish space inside the logical frame)
@@ -637,6 +637,13 @@
     HUD.l = Math.max(24, -ox / scale + 16); HUD.r = Math.min(VW - 24, (vw - ox) / scale - 16);
   }
 
+  // Beak stays shut unless the chicken is squeaking, talking, or trembling with fear.
+  function chickenMouth(now, sinceSq, cower) {
+    if (sinceSq >= 0 && sinceSq < 0.36) return Math.sqrt(Math.sin(Math.PI * sinceSq / 0.36));
+    if (G.bubble) { const a = now - G.bubble.t0; if (a >= 0 && a < 0.55) return 0.45 * Math.abs(Math.sin(a * 22)); }
+    if (cower) return 0.12 + 0.06 * Math.sin(now * 40);
+    return 0;
+  }
   function chickenParams(now) {
     const sinceHit = now - G.hitT;
     const wob = sinceHit < 1.2 ? Math.exp(-sinceHit * 5) * Math.cos(sinceHit * 28) : 0;
@@ -654,7 +661,7 @@
       scale: 1, sx: 1 + 0.22 * wob, sy: 1 - 0.18 * wob,
       tilt: sinceHit < 1.4 ? -0.35 * Math.exp(-sinceHit * 3) * Math.cos(sinceHit * 9) : Math.sin(now * 1.3) * 0.03,
       neck: sinceSq < 0.3 ? 0.15 * Math.sin(sinceSq / 0.3 * Math.PI) : 0,
-      mouth: sinceSq < 0.3 ? 1 : 0.35, eyes, look: clamp((gp.x - 380) / 160, -1, 1),
+      mouth: chickenMouth(now, sinceSq, cower), eyes, look: clamp((gp.x - 380) / 160, -1, 1),
       skin: G.skin, t: now, flash: sinceHit < 0.15 ? 1 - sinceHit / 0.15 : 0, blush: G.scene === 'title',
     };
   }
@@ -827,7 +834,7 @@
     const shake = (f.type === 'bass' ? 5 : 2.5) * sq;
     D.chicken(ctx, {
       x: x + (Math.random() - 0.5) * shake, y: y + (Math.random() - 0.5) * shake, scale: sc, sx: sxx, sy: syy, tilt: rot,
-      neck: (f.phase === 'outro' && f.type !== 'yeet') ? 0.6 : sq * (f.type === 'helium' ? 0.3 : 0.65), mouth: f.phase === 'outro' && f.type !== 'yeet' ? 0.6 : 0.3 + 0.7 * sq,
+      neck: (f.phase === 'outro' && f.type !== 'yeet') ? 0.6 : sq * (f.type === 'helium' ? 0.3 : 0.65), mouth: f.phase === 'outro' && f.type !== 'yeet' ? 0.6 : sq,
       eyes, bulge: sq, skin: G.skin, t: now, legs: true,
     });
     if (!f.flyT) {

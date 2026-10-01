@@ -4,11 +4,12 @@ const Sfx = (() => {
   let ac = null, master, sfxBus, musicBus, noiseBuf;
   let musicOn = true, sfxOn = true;
 
-  function init() {
-    if (ac) { if (ac.state === 'suspended') ac.resume(); return ac; }
+  // `offline` lets tools render sounds into an OfflineAudioContext to check them without speakers.
+  function init(offline) {
+    if (ac) { if (ac.state === 'suspended' && !offline) ac.resume(); return ac; }
     const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return null;
-    ac = new AC({ latencyHint: 'interactive' });
+    if (!AC && !offline) return null;
+    ac = offline || new AC({ latencyHint: 'interactive' });
     master = ac.createGain(); master.gain.value = 0.9;
     const comp = ac.createDynamicsCompressor();
     comp.threshold.value = -12; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.15;
@@ -167,7 +168,10 @@ const Sfx = (() => {
 
   // ---------- the rubber chicken ----------
   // Voice: buzzy reed (saw + square) through nasal formants, a little grit, slight vibrato.
-  function voice(dest) {
+  const SCREAM_FORMANTS = [[1050, 3, 1], [2800, 5, 0.8], [5400, 6, 0.35]];
+  // Honk: lower, wider "ahnk" vowel. This is what a light squeeze sounds like.
+  const HONK_FORMANTS = [[620, 2.5, 0.9], [1250, 3.5, 1], [2500, 4, 0.6], [4600, 3, 0.45]];
+  function voice(dest, formants = SCREAM_FORMANTS) {
     const out = ac.createGain(); out.gain.value = 0.0001; out.connect(dest || sfxBus);
     const pre = ac.createGain();
     const o1 = ac.createOscillator(); o1.type = 'sawtooth';
@@ -183,7 +187,7 @@ const Sfx = (() => {
     o1.connect(pre); o2.connect(o2g); o2g.connect(pre);
     const ws = ac.createWaveShaper(); ws.curve = distCurve(3);
     pre.connect(ws);
-    [[1050, 3, 1], [2800, 5, 0.8], [5400, 6, 0.35]].forEach(([f, q, g]) => {
+    formants.forEach(([f, q, g]) => {
       const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
       const gg = ac.createGain(); gg.gain.value = g; ws.connect(bp); bp.connect(gg); gg.connect(out);
     });
@@ -197,23 +201,30 @@ const Sfx = (() => {
     };
   }
 
-  // Short squeak: a light squeeze. Used for every normal hit.
+  // Short honk: a light squeeze. Used for every normal hit. Low (~500 Hz like the real toy),
+  // buzzy, with a reed flutter, and it sags in pitch instead of chirping up like a mouse.
   function squeak(t, pm = 1) {
     if (!ready()) return;
-    const v = voice();
-    const p = pm * (0.92 + Math.random() * 0.16);
+    const p = pm * (0.94 + Math.random() * 0.12);
+    const flutter = ac.createGain(); flutter.gain.value = 0.72; flutter.connect(sfxBus);
+    const fl = ac.createOscillator(); fl.frequency.value = 36;
+    const flg = ac.createGain(); flg.gain.value = 0.28;
+    fl.connect(flg); flg.connect(flutter.gain); fl.start(t); fl.stop(t + 0.45);
+    const v = voice(flutter, HONK_FORMANTS);
+    v.lfoG.gain.value = 5;
     v.freq.forEach((f) => {
-      f.setValueAtTime(820 * p, t);
-      f.exponentialRampToValueAtTime(1350 * p, t + 0.05);
-      f.exponentialRampToValueAtTime(1150 * p, t + 0.13);
-      f.exponentialRampToValueAtTime(760 * p, t + 0.22);
+      f.setValueAtTime(430 * p, t);
+      f.exponentialRampToValueAtTime(560 * p, t + 0.04);
+      f.exponentialRampToValueAtTime(530 * p, t + 0.2);
+      f.exponentialRampToValueAtTime(440 * p, t + 0.32);
     });
     const g = v.out.gain;
     g.setValueAtTime(0.0001, t);
-    g.exponentialRampToValueAtTime(0.32, t + 0.015);
-    g.setValueAtTime(0.3, t + 0.15);
-    g.exponentialRampToValueAtTime(0.0001, t + 0.26);
-    v.stop(t + 0.3);
+    g.exponentialRampToValueAtTime(0.5, t + 0.02);
+    g.setValueAtTime(0.44, t + 0.22);
+    g.exponentialRampToValueAtTime(0.0001, t + 0.34);
+    v.stop(t + 0.4);
+    noise(t, 0.002, 0.03, 0.12, 'bandpass', 1500, 2); // rubber creak as it gets squeezed
   }
   // A chicken "bawk?" for speech bubbles.
   function bawk(t, pm = 1) {
