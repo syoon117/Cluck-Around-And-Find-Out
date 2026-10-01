@@ -9,6 +9,8 @@ const Sfx = (() => {
     if (ac) { if (ac.state === 'suspended' && !offline) ac.resume(); return ac; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC && !offline) return null;
+    // iPhones mute web audio when the ring/silent switch is on unless the page asks for playback audio
+    try { if (!offline && navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
     ac = offline || new AC({ latencyHint: 'interactive' });
     master = ac.createGain(); master.gain.value = 0.9;
     const comp = ac.createDynamicsCompressor();

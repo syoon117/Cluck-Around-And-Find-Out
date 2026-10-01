@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#0b2c29">
+<!-- installable on phones: home-screen icon, full screen, offline -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cluck Around">
+<style>:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }</style>
 <!-- page:start -->
 <title>Cluck Around and Find Out</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -356,5 +365,11 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
 <script src="js/draw.js"></script>
 <script src="js/game.js"></script>
 <!-- page:end -->
+<script>
+  // offline support once installed (service workers only run on https or localhost)
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
 </body>
 </html>

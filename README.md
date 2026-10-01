@@ -50,6 +50,17 @@ Eggs are earned by smacking (+3), dodging (+1) and clearing levels (+10 + 5×lev
 
 The catalog (`WEAPONS`, `RARITY`, `MYSTERY`) is at the top of `js/game.js`. All pack purchases go through `buyPack()`. For the App Store build, replace its egg check with an in-app purchase of `MYSTERY.product` (`mystery_pack_5`, e.g. $0.99) and call `grantPack()` when the purchase succeeds.
 
+## Playing it on phones
+
+The game is hosted for free with GitHub Pages at **https://syoon117.github.io/Cluck-Around-And-Find-Out/** once Pages is turned on (repo **Settings → Pages → Build and deployment → Source: Deploy from a branch**, pick the branch and `/ (root)`, Save). Every push to that branch updates the site in a minute or two.
+
+To install it like an app:
+
+- **iPhone (Safari):** open the link, tap **Share → Add to Home Screen**. It launches full screen with its own icon.
+- **Android (Chrome):** open the link, tap **⋮ → Install app** (or **Add to Home screen**).
+
+After the first launch it works offline. On iPhone, if there's no sound, check the ring/silent switch.
+
 ## Running it
 
 It's a static page with no build step. Open `index.html` directly, or serve the folder:
@@ -58,7 +69,7 @@ It's a static page with no build step. Open `index.html` directly, or serve the 
 npx serve .        # or: python3 -m http.server
 ```
 
-All graphics are drawn on a canvas and every sound is synthesized with the Web Audio API, so there are no asset files.
+All graphics are drawn on a canvas and every sound is synthesized with the Web Audio API, so the only image files are the app icons. `manifest.webmanifest` and `sw.js` make it installable and playable offline.
 
 ## Files
 
@@ -73,5 +84,5 @@ The plan is to wrap this folder as a native app with [Capacitor](https://capacit
 
 - **Payments**: Apple requires its own in-app purchase system for digital goods like these packs. Use a Capacitor IAP plugin (for example RevenueCat) and call `grantPack()` when a `mystery_pack_5` purchase succeeds. Randomized paid packs ("loot boxes") also have to show the odds before purchase under App Store rules, and some countries restrict or ban them. The odds are listed above and in `RARITY`. Don't use Stripe or a web checkout for packs inside the iOS app.
 - **Fonts**: the menus load two Google Fonts over the network. Bundle the font files locally for an offline app.
-- **Age rating**: the humor (and the Cursed Pack) will likely land at 12+ or 17+ in the App Store questionnaire. Answer it honestly to avoid a rejection.
+- **Age rating**: the humor (and items like the Purple Wobbler) will likely land at 12+ or 17+ in the App Store questionnaire. Answer it honestly to avoid a rejection.
 - **Save data** is in `localStorage`, which persists inside a Capacitor WebView. Add cloud save later if you want it to sync across devices.
