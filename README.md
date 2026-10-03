@@ -25,7 +25,7 @@ You and the chicken take turns tapping a plastic cup that covers a bell. On your
 - Levels never end and the tempo keeps climbing: ~105 BPM at level 1, ~250 at 10, ~400 at 20, ~490 by 40. Past level ~15 it's faster than human reaction, so you have to read the chicken. Fake grabs start at level 3, and the chicken's "shifty eyes" tell fades out by level 7. The whole curve is the `tempoFor()` function at the top of `js/game.js`.
 - **Modes**: *Ranked* always uses the same tempo curve, and it's the only mode that moves your badge. *Custom* lets you pick how fast the tempo climbs per level (×0.5 Slow burn, ×1 Standard, ×2 Fast, ×4 Unhinged) and keeps its own progress per setting.
 - Your Ranked best level shows as a badge with a rank title (Raw Egg → Chick → … → The Final Squeak at 100), and the results screens have a copyable brag line.
-- To play-test a level, open the page with `#level-20` (or any number) on the URL and use the **Test** button.
+- **Start anywhere**: the title screen has a level picker (−10 / − / + / +10, hold to repeat) that defaults to where you left off. Starting high doesn't cheat the badge: it only moves when you *clear* a Ranked level. Opening the page with `#level-20` presets the picker, for play-testing.
 - You have 5 HP. The chicken has 3 HP on level 1, 4 on levels 2–3, and 5 after that. The last hit on the chicken is always the finisher.
 
 ## Tutorial and hints

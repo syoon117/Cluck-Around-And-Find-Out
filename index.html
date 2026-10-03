@@ -226,6 +226,18 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
 .pcard .dupe { font-size: 12px; font-weight: 700; opacity: 0.75; }
 @keyframes flipIn { from { transform: rotateY(90deg) scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .pcard { animation: none; } }
+.lvpick { display: flex; align-items: center; gap: 6px; }
+.step {
+  flex: none; width: 46px; height: 46px; border-radius: 12px; border: 3px solid var(--ink); background: var(--cream); color: var(--ink);
+  font: 400 24px var(--font-display); cursor: pointer; box-shadow: 0 3px 0 var(--ink); touch-action: manipulation;
+}
+.step.small-step { width: 44px; font: 800 15px var(--font-body); }
+.step:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.step:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.lvval { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+.lvval small { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+.lvval b { font-family: var(--font-display); font-weight: 400; font-size: 30px; font-variant-numeric: tabular-nums; }
+.lvval span { font-size: 13px; font-weight: 700; opacity: 0.75; }
 .brag { display: flex; gap: 10px; align-items: center; background: rgba(29, 18, 10, 0.1); border-radius: 12px; padding: 10px 12px; }
 .brag p { flex: 1; min-width: 0; font-style: italic; font-size: 15px; -webkit-user-select: text; user-select: text; }
 @media (max-width: 420px) {
@@ -259,8 +271,14 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
           <p id="modeNote" class="mode-note"></p>
         </div>
         <div class="stack">
+          <div class="lvpick" role="group" aria-label="Starting level">
+            <button id="lvDown10" class="step small-step" aria-label="Start 10 levels lower">−10</button>
+            <button id="lvDown" class="step" aria-label="Start one level lower">−</button>
+            <div class="lvval"><small>Level</small><b id="lvNum">1</b><span id="lvBpm"></span></div>
+            <button id="lvUp" class="step" aria-label="Start one level higher">+</button>
+            <button id="lvUp10" class="step small-step" aria-label="Start 10 levels higher">+10</button>
+          </div>
           <button id="btnPlay" class="btn hot">Play</button>
-          <button id="btnContinue" class="btn" hidden>Continue</button>
           <div class="row">
             <button id="btnShop" class="btn alt">Packs</button>
             <button id="btnHow" class="btn alt">How to play</button>

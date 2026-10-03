@@ -637,6 +637,7 @@
     G.fin = null;
     const bonus = 10 + 5 * G.level;
     save.eggs += bonus; G.stats.eggs += bonus;
+    save.startLv = G.level + 1;
     const newBest = ranked() && G.level + 1 > save.best;
     if (ranked()) save.best = Math.max(save.best, G.level + 1);
     else save.customBest[customKey()] = Math.max(modeBest(), G.level + 1);
@@ -1040,12 +1041,18 @@
   }
   // Play-testing shortcut: open the page with #level-20 to start at level 20.
   const testLevel = () => { const m = /^#level-(\d+)$/.exec(location.hash); return m ? Math.max(1, +m[1]) : 0; };
+  // Start anywhere: picks up where you left off, but you can jump to any level.
+  // (#level-20 on the URL presets it, for play-testing.)
+  const startLv = () => testLevel() || clamp(save.startLv || modeBest(), 1, 999);
+  function setStartLv(v) { save.startLv = clamp(v, 1, 999); persist(); refreshTitle(); }
   function refreshTitle() {
     $('badgeLevel').textContent = save.best;
     $('badgeRank').textContent = rankFor(save.best);
-    const tl = testLevel();
-    $('btnContinue').hidden = !tl && modeBest() <= 1;
-    $('btnContinue').textContent = tl ? `Test · Level ${tl}` : `Continue · Level ${modeBest()}`;
+    const lv = startLv();
+    $('lvNum').textContent = lv;
+    $('lvBpm').textContent = `${Math.round(60 / tempoFor(lv, curRamp()))} BPM`;
+    $('btnPlay').textContent = lv === 1 ? 'Play' : `Play · Level ${lv}`;
+    $('lvDown').disabled = $('lvDown10').disabled = lv <= 1;
     $('mdRanked').setAttribute('aria-pressed', String(ranked()));
     $('mdCustom').setAttribute('aria-pressed', String(!ranked()));
     $('rampRow').hidden = ranked();
@@ -1185,10 +1192,21 @@
 
   // buttons
   const on = (id, fn) => $(id).addEventListener('click', fn);
-  on('btnPlay', () => beginGame(1));
-  on('btnContinue', () => beginGame(testLevel() || modeBest()));
-  on('mdRanked', () => { save.mode = 'ranked'; persist(); refreshTitle(); });
-  on('mdCustom', () => { save.mode = 'custom'; persist(); refreshTitle(); });
+  on('btnPlay', () => beginGame(startLv()));
+  [['lvDown', -1], ['lvUp', 1], ['lvDown10', -10], ['lvUp10', 10]].forEach(([id, d]) => {
+    // tap to step, hold to keep stepping
+    let timer = null;
+    const stop = () => { clearTimeout(timer); timer = null; };
+    $(id).addEventListener('pointerdown', (e) => {
+      e.preventDefault(); setStartLv(startLv() + d);
+      const go = (delay) => { timer = setTimeout(() => { setStartLv(startLv() + d); go(70); }, delay); };
+      go(400);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => $(id).addEventListener(ev, stop));
+    $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setStartLv(startLv() + d); } });
+  });
+  on('mdRanked', () => { save.mode = 'ranked'; save.startLv = null; persist(); refreshTitle(); });
+  on('mdCustom', () => { save.mode = 'custom'; save.startLv = null; persist(); refreshTitle(); });
   RAMPS.forEach((r) => {
     const b = document.createElement('button');
     b.className = 'chip'; b.dataset.ramp = r.v; b.textContent = `×${r.v} ${r.label}`;
