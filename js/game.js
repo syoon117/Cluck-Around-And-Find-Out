@@ -160,6 +160,25 @@
     const table = [0.08, 0.2, 0.4, 0.58, 0.72, 0.8];
     return Math.max(0.05, table[Math.min(s, 5)] - 0.02 * (G.level - 1));
   }
+  // The chicken's memory: how many clean taps you made before each of your last 3 takes
+  // (5+ counts as one habit). Repeat a habit 2 of 3 times and it reads you. It forgets
+  // as soon as you mix it up, and it has no memory at all on levels 1-3.
+  const READ = { memory: 3, repeats: 2, floor: 0.05 };
+  function readPenalty(lv) {
+    if (lv <= 3) return 0;
+    if (lv >= 10) return 0.3;
+    return 0.1 + (lv - 4) * 0.03; // 10% at level 4 up to 25% at level 9
+  }
+  function isRead(s) {
+    if (G.tut || readPenalty(G.level) === 0) return false;
+    const k = Math.min(s, 5);
+    return G.habit.filter((h) => h === k).length >= READ.repeats;
+  }
+  // what a take right now would actually get you
+  function takeChance(s) {
+    const base = trickChance(s);
+    return isRead(s) ? Math.max(READ.floor, base - readPenalty(G.level)) : base;
+  }
   const playerPool = () => Object.keys(WEAPONS).filter((k) => save.items[k]);
   const CHICKEN_POOL = Object.keys(WEAPONS).filter((k) => k !== 'hand');
 
@@ -274,6 +293,7 @@
     G.skin = SKIN_BY_LEVEL[(lv - 1) % SKIN_BY_LEVEL.length];
     G.name = lv <= NAMES.length ? NAMES[lv - 1] : `${NAMES[(lv - 1) % NAMES.length]} ${romanize(Math.floor((lv - 1) / NAMES.length) + 1)}`;
     G.stats = { smacks: 0, dodges: 0, eggs: 0 };
+    G.habit = []; G.readTake = false;
     G.fin = null; G.smack = null; FX.list = []; G.floaters = []; G.bubble = null;
     showOverlay(null);
     G.scene = 'play';
@@ -345,7 +365,8 @@
       } else {
         motion(G.wing, start, t - 0.1 * T, end, P.wingNope, P.wingHome);
         Sfx.bawk(t, 1.1);
-        at(t, () => { say(pick(['NICE TRY', 'nope.', 'lol no', 'I SAW THAT'])); G.eyes = { mode: 'smug', until: Sfx.now() + 1.2 * T + 0.3 }; });
+        const lines = G.readTake ? ['lol again?', 'I know your rhythm', 'predictable.', 'seen it.', 'same thing AGAIN?'] : ['NICE TRY', 'nope.', 'lol no', 'I SAW THAT'];
+        at(t, () => { say(pick(lines)); G.eyes = { mode: 'smug', until: Sfx.now() + 1.2 * T + 0.3 }; });
       }
     } else if (G.cup === 'chicken') {
       motion(G.wing, start, t, end, P.wingTap, P.wingHome);
@@ -450,7 +471,10 @@
     }
   }
   function playerGrab(now) {
-    G.cup = 'player'; G.trickP = trickChance(G.streakP); G.streakP = 0; G.grabbedOnce = true;
+    G.readTake = isRead(G.streakP);
+    G.cup = 'player'; G.trickP = takeChance(G.streakP);
+    G.habit = [...G.habit, Math.min(G.streakP, 5)].slice(-READ.memory);
+    G.streakP = 0; G.grabbedOnce = true;
     if (G.tut) { G.trickP = G.tut.step === 'take' ? 1 : 0; if (G.tut.step === 'take') tutBanner('It fell for it!'); }
     motion(G.glove, now, now + 0.05, now + 0.3, P.gloveTap, P.gloveHold);
     Sfx.snatch(now + 0.04);
@@ -690,7 +714,7 @@
   }
   // every frame: hint TAKE when it's likely to work (or when the tutorial asks for it)
   function syncHints() {
-    const glow = G.scene === 'play' && G.cup === 'on' && (G.tut ? G.tut.step === 'take' : trickChance(G.streakP) >= 0.58);
+    const glow = G.scene === 'play' && G.cup === 'on' && (G.tut ? G.tut.step === 'take' : takeChance(G.streakP) >= 0.58);
     $('bGrab').classList.toggle('glow', glow);
     document.body.classList.toggle('in-tut', !!G.tut && G.scene !== 'title');
   }
@@ -1001,11 +1025,19 @@
     if (!G.fin) {
       D.text(ctx, G.name.toUpperCase(), 380, 26, 22, '#ffd84a');
       D.hpBar(ctx, 230, 44, 300, 22, G.hpC, G.hpCMax, '#ff6a4d');
-      const sus = 1 - trickChance(G.streakP) / 0.8;
+      const sus = 1 - takeChance(G.streakP) / 0.8;
       D.text(ctx, 'SUSPICION', 300, 84, 14, '#fff3c4', { font: "'Barlow Semi Condensed', sans-serif", weight: 800, lw: 4 });
       D.rr(ctx, 346, 78, 120, 12, 6); D.fs(ctx, 'rgba(0,0,0,0.5)', INK, 2);
       D.rr(ctx, 346, 78, Math.max(8, 120 * sus), 12, 6);
       D.fs(ctx, sus > 0.66 ? '#ff6a4d' : sus > 0.33 ? '#ffd84a' : '#9ff2a0');
+      if (G.cup === 'on' && isRead(G.streakP)) {
+        // it's seen this exact move before
+        const ex = 486, ey = 84;
+        ctx.beginPath(); ctx.moveTo(ex - 11, ey); ctx.quadraticCurveTo(ex, ey - 9, ex + 11, ey); ctx.quadraticCurveTo(ex, ey + 9, ex - 11, ey);
+        D.fs(ctx, '#fff3c4', INK, 2);
+        ctx.fillStyle = '#e8432e'; ctx.beginPath(); ctx.arc(ex, ey, 3.5, 0, Math.PI * 2); ctx.fill();
+        D.text(ctx, 'READ YOU', ex + 18, ey, 14, '#ff6a4d', { align: 'left', font: "'Barlow Semi Condensed', sans-serif", weight: 800, lw: 4 });
+      }
     }
     // top-left: level
     D.text(ctx, G.tut ? 'TUTORIAL' : `LV ${G.level}`, HUD.l, 30, G.tut ? 20 : 26, '#fff3c4', { align: 'left' });
@@ -1270,7 +1302,7 @@
   });
 
   // test hook (used by the automated smoke test; harmless in play)
-  window.__cluck = { G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
+  window.__cluck = { G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, takeChance, isRead, readPenalty, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
 
   showOverlay('title');
   requestAnimationFrame(frame);
