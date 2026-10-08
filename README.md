@@ -57,7 +57,13 @@ Eggs are earned by smacking (+3), dodging (+1) and clearing levels (+10 + 5×lev
 - **Mystery Packs**: 60 eggs each.
 - **Finishers**: Choke the Chicken (free), Window Yeet, Helium Huff, Bass Boosted.
 
-The catalog (`WEAPONS`, `RARITY`, `MYSTERY`) is at the top of `js/game.js`. All pack purchases go through `buyPack()`. For the App Store build, replace its egg check with an in-app purchase of `MYSTERY.product` (`mystery_pack_5`, e.g. $0.99) and call `grantPack()` when the purchase succeeds.
+The catalog (`WEAPONS`, `RARITY`, `MYSTERY`) is at the top of `js/game.js`. All pack purchases go through `buyPack()`. The shop shows the full pack odds (per rarity and per item).
+
+**Money plan (from the October 2026 launch research):** random Mystery Packs stay **eggs-only**. Real money buys specific items, finishers and fixed bundles directly. Paid random packs are now treated as gambling in Belgium, banned for minors in Brazil (since March 2026), and push the PEGI rating to 16, so keeping randomness off the price tag avoids those rules. See the launch plan for details.
+
+## Privacy
+
+`privacy.html` is the privacy policy (the game collects no data; saves stay on the device). It's linked from How to play, and its URL goes in the Play Console and App Store Connect. Add the contact email once the dedicated Cluck email exists, and update the page before adding ads or leaderboards.
 
 ## Playing it on phones
 
@@ -92,6 +98,6 @@ All graphics are drawn on a canvas and every sound is synthesized with the Web A
 The plan is to wrap this folder as a native app with [Capacitor](https://capacitorjs.com/) (`npx cap add ios`, then point `webDir` at this folder). Things to handle when you get there:
 
 - **Payments**: Apple requires its own in-app purchase system for digital goods like these packs. Use a Capacitor IAP plugin (for example RevenueCat) and call `grantPack()` when a `mystery_pack_5` purchase succeeds. Randomized paid packs ("loot boxes") also have to show the odds before purchase under App Store rules, and some countries restrict or ban them. The odds are listed above and in `RARITY`. Don't use Stripe or a web checkout for packs inside the iOS app.
-- **Fonts**: the menus load two Google Fonts over the network. Bundle the font files locally for an offline app.
+- **Fonts**: bundled in `fonts/` (SIL Open Font License, licenses included), so the app works fully offline.
 - **Age rating**: the humor (and items like the Purple Wobbler) will likely land at 12+ or 17+ in the App Store questionnaire. Answer it honestly to avoid a rejection.
 - **Save data** is in `localStorage`, which persists inside a Capacitor WebView. Add cloud save later if you want it to sync across devices.

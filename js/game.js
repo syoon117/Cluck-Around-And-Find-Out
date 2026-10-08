@@ -1120,6 +1120,11 @@
     const ids = Object.keys(WEAPONS);
     const owned = ids.filter((k) => save.items[k]).length;
     $('collCount').textContent = `${owned} / ${ids.length}`;
+    const per = ['common', 'rare', 'epic', 'legendary'].map((r) => {
+      const n = ids.filter((k) => WEAPONS[k].r === r).length;
+      return `${RARITY[r].label} ${n} items, ${(RARITY[r].weight / n).toFixed(2)}% each`;
+    });
+    $('oddsPerItem').textContent = `Per item: ${per.join(' · ')}.`;
     $('btnOpenPack').innerHTML = `Open a pack <span class="price"><span class="egg-dot"></span>${MYSTERY.price}</span>`;
     $('btnOpenPack').classList.toggle('short', save.eggs < MYSTERY.price);
     const grid = $('collGrid'); grid.innerHTML = '';
@@ -1163,8 +1168,9 @@
     for (const r of tiers) { if ((x -= RARITY[r].weight) < 0) { tier = r; break; } }
     return pick(Object.keys(WEAPONS).filter((k) => WEAPONS[k].r === tier));
   }
-  // Single entry point for buying a pack. In the App Store build, swap the egg check for an
-  // in-app purchase of MYSTERY.product and call grantPack() when the purchase succeeds.
+  // Single entry point for buying a pack. Launch plan (Oct 2026 research): random packs stay
+  // eggs-only, earned by playing. Real money buys items, finishers and fixed bundles directly,
+  // which keeps the game clear of paid loot-box rules (Belgium, Brazil, PEGI 16, Apple odds).
   function buyPack() {
     const msg = $('shopMsg');
     if (save.eggs < MYSTERY.price) { msg.textContent = `You need ${MYSTERY.price - save.eggs} more eggs. Smack the chicken to earn them.`; return; }

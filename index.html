@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0b2c29">
 <!-- installable on phones: home-screen icon, full screen, offline -->
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -238,6 +239,10 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
 .lvval small { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
 .lvval b { font-family: var(--font-display); font-weight: 400; font-size: 30px; font-variant-numeric: tabular-nums; }
 .lvval span { font-size: 13px; font-weight: 700; opacity: 0.75; }
+.odds { font-size: 14px; opacity: 0.95; }
+.odds summary { cursor: pointer; font-weight: 800; text-decoration: underline; }
+.odds p { font-size: 14px; margin-top: 4px; }
+.keys a { color: inherit; font-weight: 800; }
 .brag { display: flex; gap: 10px; align-items: center; background: rgba(29, 18, 10, 0.1); border-radius: 12px; padding: 10px 12px; }
 .brag p { flex: 1; min-width: 0; font-style: italic; font-size: 15px; -webkit-user-select: text; user-select: text; }
 @media (max-width: 420px) {
@@ -303,6 +308,7 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
           <li><b class="n">4</b><p>The longer you play it straight, the lower the chicken's <b>suspicion</b> and the more likely it falls for a grab.</p></li>
           <li><b class="n">5</b><p>Miss your beat and you get smacked too. Win the level and you get to finish the chicken off. Every level is faster.</p></li>
         </ol>
+        <p class="keys"><a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> · The game collects no data.</p>
         <p class="keys">Keyboard: <kbd>Space</kbd> tap · <kbd>F</kbd> take · <kbd>Esc</kbd> pause. In the finisher, hold either button.</p>
         <div class="row">
           <button id="btnHowTut" class="btn alt">Play the tutorial</button>
@@ -322,6 +328,12 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
           <div class="pack-text">
             <h3>Mystery Pack</h3>
             <p>5 random things to smack the chicken with. At least one Rare or better. Duplicates turn into eggs.</p>
+            <details class="odds">
+              <summary>Pack odds</summary>
+              <p>Each item: <b>Common 60%</b> · <b>Rare 27%</b> · <b>Epic 10%</b> · <b>Legendary 3%</b>. Within a rarity, every item is equally likely.</p>
+              <p>If the first 4 items are all Common, the 5th is drawn from Rare 67.5% · Epic 25% · Legendary 7.5%.</p>
+              <p id="oddsPerItem"></p>
+            </details>
             <button id="btnOpenPack" class="btn hot">Open a pack</button>
           </div>
         </div>
