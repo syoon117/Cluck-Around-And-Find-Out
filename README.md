@@ -61,6 +61,23 @@ The catalog (`WEAPONS`, `RARITY`, `MYSTERY`) is at the top of `js/game.js`. All 
 
 **Money plan (from the October 2026 launch research):** random Mystery Packs stay **eggs-only**. Real money buys specific items, finishers and fixed bundles directly. Paid random packs are now treated as gambling in Belgium, banned for minors in Brazil (since March 2026), and push the PEGI rating to 16, so keeping randomness off the price tag avoids those rules. See the launch plan for details.
 
+## Direct-purchase shop
+
+Everything sold in the shop has fixed, known contents. Prices are in eggs on the web; the store builds switch to real money.
+
+| Offer | Eggs (now) | Store price | Product id |
+| --- | --- | --- | --- |
+| Any single item (tap a locked tile in the collection) | 30 / 45 / 80 / 150 by rarity | $0.99 | `item_<id>` |
+| Kitchen Set · Bathroom Set | 120 · 130 | $1.99 | `set_kitchen` · `set_bathroom` |
+| Sports Set · Produce Aisle | 190 · 180 | $2.99 | `set_sports` · `set_produce` |
+| Legendary Set (all 6 legendaries) | 450 | $3.99 | `set_legendary` |
+| Each paid finisher | 45 / 70 / 100 | $1.99 | `finisher_<id>` |
+| Cluck Club: all 3 paid finishers + Kitchen and Bathroom Sets | 400 | $4.99 | `cluck_club` |
+
+Mystery Packs (random) are **never** sold for money; they stay 60 eggs. The Cluck Club deliberately contains no packs for the same reason.
+
+To switch a store build to real money, set `STORE.mode = 'money'` in `js/game.js` and provide `window.CluckIAP.purchase(productId)`, returning a promise that resolves `true` when the purchase succeeds (a thin wrapper around RevenueCat or the native store). Prices then show in dollars, and the same grant code runs. Catalog: `ITEM_EGGS`, `SETS`, `CLUB` and `FIN_USD` at the top of `js/game.js`.
+
 ## Privacy
 
 `privacy.html` is the privacy policy (the game collects no data; saves stay on the device). It's linked from How to play, and its URL goes in the Play Console and App Store Connect. Add the contact email once the dedicated Cluck email exists, and update the page before adding ads or leaderboards.

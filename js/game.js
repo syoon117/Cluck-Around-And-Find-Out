@@ -77,6 +77,49 @@
     { id: 'helium', name: 'Helium Huff', price: 70, blurb: 'Squeeze it bigger and higher until it pops.' },
     { id: 'bass', name: 'Bass Boosted', price: 100, blurb: 'Slow-mo, deep-fried, extremely loud.' },
   ];
+  // ---------- direct-purchase shop ----------
+  // Everything sold here has fixed, known contents (no randomness for money). Each offer has an
+  // egg price (used now) and a USD price + store product id (used when STORE.mode is 'money').
+  const ITEM_EGGS = { common: 30, rare: 45, epic: 80, legendary: 150 };
+  const SETS = [
+    { id: 'kitchen', name: 'Kitchen Set', items: ['pan', 'spatula', 'spoon', 'baguette', 'croissant'], eggs: 120, usd: 1.99, blurb: 'Cook it, then hit it with the cookware.' },
+    { id: 'bathroom', name: 'Bathroom Set', items: ['plunger', 'brush', 'toiletseat', 'sponge', 'duck'], eggs: 130, usd: 1.99, blurb: 'Fresh from the worst room in the house.' },
+    { id: 'sports', name: 'Sports Set', items: ['bat', 'racket', 'bowlingpin', 'skateboard', 'trophy'], eggs: 190, usd: 2.99, blurb: 'Everyone gets a trophy. In the face.' },
+    { id: 'produce', name: 'Produce Aisle', items: ['banana', 'cucumber', 'eggplant', 'roast', 'lollipop'], eggs: 180, usd: 2.99, blurb: 'Five servings of fruits, vegetables and violence.' },
+    { id: 'legendary', name: 'Legendary Set', items: ['anvil', 'sink', 'goldpan', 'goose', 'cactus', 'wobbler'], eggs: 450, usd: 3.99, blurb: 'Every legendary. Skip the luck entirely.' },
+  ];
+  const FIN_USD = 1.99;
+  const CLUB = { id: 'cluck_club', name: 'Cluck Club', eggs: 400, usd: 4.99, fins: ['yeet', 'helium', 'bass'], sets: ['kitchen', 'bathroom'],
+    blurb: 'All 3 paid finishers + the Kitchen and Bathroom Sets. The best deal in the coop.' };
+  const product = { item: (id) => `item_${id}`, set: (id) => `set_${id}`, fin: (id) => `finisher_${id}`, club: () => 'cluck_club' };
+  // STORE.mode 'eggs' = pay with eggs (web build). For the app-store builds set it to 'money' and
+  // provide window.CluckIAP.purchase(productId) -> Promise<boolean> (e.g. a RevenueCat wrapper).
+  const STORE = {
+    mode: 'eggs',
+    label(o) { return this.mode === 'money' ? `$${o.usd.toFixed(2)}` : `${o.eggs}`; },
+    async buy(o, grant) {
+      const msg = $('shopMsg');
+      if (this.mode === 'money') {
+        try { if (window.CluckIAP && await window.CluckIAP.purchase(o.product)) grant(); else msg.textContent = 'Purchase cancelled.'; }
+        catch (e) { msg.textContent = "The purchase didn't go through. You weren't charged."; }
+        return;
+      }
+      if (save.eggs < o.eggs) { msg.textContent = `You need ${o.eggs - save.eggs} more eggs for ${o.name}. Smack the chicken to earn them.`; return; }
+      save.eggs -= o.eggs;
+      grant();
+    },
+  };
+  const itemOffer = (id) => ({ name: WEAPONS[id].name, eggs: ITEM_EGGS[WEAPONS[id].r], usd: 0.99, product: product.item(id) });
+  const setOffer = (st) => ({ name: st.name, eggs: st.eggs, usd: st.usd, product: product.set(st.id) });
+  const finOffer = (f) => ({ name: f.name, eggs: f.price, usd: FIN_USD, product: product.fin(f.id) });
+  const clubOffer = () => ({ name: CLUB.name, eggs: CLUB.eggs, usd: CLUB.usd, product: product.club() });
+  function celebrate(text) {
+    Sfx.init(); Sfx.coin(Sfx.now()); Sfx.squeak(Sfx.now() + 0.2);
+    $('shopMsg').textContent = text;
+    persist(); renderShop();
+  }
+  function grantItems(ids) { ids.forEach((k) => (save.items[k] = true)); }
+
   const NAMES = ["Lil' Squeaker", 'Gary', 'Big Green', 'Nugget', 'Keychain Kevin', 'Sir Honksalot', 'Drumstick Dan', 'The Squeakfather', 'Cluckzilla', 'Henrietta the Unhinged'];
   const SKIN_BY_LEVEL = [0, 0, 1, 0, 2, 3, 0, 4, 1, 2];
   const TAUNTS = ['get clucked', 'BAWK BAWK BOZO', 'skill issue', 'sit down', 'cluck around...', '...find out', 'too slow, meat'];
@@ -1135,9 +1178,19 @@
       li.appendChild(weaponIcon(k, !have));
       const nm = document.createElement('span'); nm.textContent = have ? WEAPONS[k].name : '???';
       li.appendChild(nm);
-      li.title = have ? `${WEAPONS[k].name} · ${RARITY[r].label}` : `Locked · ${RARITY[r].label}`;
+      li.title = have ? `${WEAPONS[k].name} · ${RARITY[r].label}` : `Locked · ${RARITY[r].label} · tap to buy`;
+      if (!have) {
+        li.tabIndex = 0; li.setAttribute('role', 'button');
+        li.setAttribute('aria-label', `Locked ${RARITY[r].label} item. Show it and its price.`);
+        const pickIt = () => { G.pickItem = k; renderShop(); $('pickBar').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
+        li.addEventListener('click', pickIt);
+        li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickIt(); } });
+        if (G.pickItem === k) li.classList.add('picked');
+      }
       grid.appendChild(li);
     }));
+    renderPickBar();
+    renderSets();
     const fl = $('finList'); fl.innerHTML = '';
     FINISHERS.forEach((f) => {
       const owned = !!save.fins[f.id];
@@ -1153,12 +1206,68 @@
         btn.disabled = save.fin === f.id;
         btn.onclick = () => { save.fin = f.id; persist(); renderShop(); };
       } else {
-        btn.innerHTML = `<span class="egg-dot"></span>${f.price}`;
-        btn.setAttribute('aria-label', `Buy ${f.name} for ${f.price} eggs`);
-        if (save.eggs < f.price) btn.classList.add('short');
+        btn.innerHTML = priceHtml(finOffer(f));
+        btn.setAttribute('aria-label', `Buy ${f.name} for ${STORE.label(finOffer(f))}${STORE.mode === 'eggs' ? ' eggs' : ''}`);
+        if (STORE.mode === 'eggs' && save.eggs < f.price) btn.classList.add('short');
         btn.onclick = () => buy('fins', f);
       }
       li.append(icons, body, btn); fl.appendChild(li);
+    });
+  }
+  function priceHtml(o) {
+    return STORE.mode === 'money' ? `<span class="price">${STORE.label(o)}</span>` : `<span class="egg-dot"></span>${o.eggs}`;
+  }
+  // the "buy this exact item" bar under the collection
+  function renderPickBar() {
+    const bar = $('pickBar'), k = G.pickItem;
+    if (!k || save.items[k]) { bar.hidden = true; return; }
+    const w = WEAPONS[k], o = itemOffer(k);
+    bar.hidden = false; bar.innerHTML = '';
+    bar.style.setProperty('--rar', RARITY[w.r].color);
+    bar.appendChild(weaponIcon(k));
+    const t = document.createElement('div'); t.className = 'pick-text';
+    t.innerHTML = '<b></b><span></span>';
+    t.querySelector('b').textContent = w.name;
+    t.querySelector('span').textContent = `${RARITY[w.r].label} · yours to keep, no luck involved`;
+    const buyB = document.createElement('button'); buyB.className = 'btn small hot';
+    buyB.innerHTML = `Buy ${priceHtml(o)}`;
+    if (STORE.mode === 'eggs' && save.eggs < o.eggs) buyB.classList.add('short');
+    buyB.onclick = () => buyItem(k);
+    const x = document.createElement('button'); x.className = 'btn small alt'; x.textContent = 'Close';
+    x.onclick = () => { G.pickItem = null; renderShop(); };
+    bar.append(t, buyB, x);
+  }
+  function renderSets() {
+    const club = $('clubCard'); club.innerHTML = '';
+    const allClub = CLUB.fins.every((f) => save.fins[f]) && CLUB.sets.every((id) => SETS.find((x) => x.id === id).items.every((k) => save.items[k]));
+    const ch = document.createElement('div'); ch.className = 'club-text';
+    ch.innerHTML = '<h3></h3><p></p>';
+    ch.querySelector('h3').textContent = CLUB.name;
+    ch.querySelector('p').textContent = CLUB.blurb;
+    const cb = document.createElement('button'); cb.className = 'btn hot';
+    if (save.club || allClub) { cb.textContent = 'Member'; cb.disabled = true; }
+    else { cb.innerHTML = `Join ${priceHtml(clubOffer())}`; if (STORE.mode === 'eggs' && save.eggs < CLUB.eggs) cb.classList.add('short'); cb.onclick = buyClub; }
+    club.append(ch, cb);
+    const list = $('setList'); list.innerHTML = '';
+    SETS.forEach((st) => {
+      const have = st.items.filter((k) => save.items[k]).length, done = have === st.items.length;
+      const li = document.createElement('li'); li.className = 'item' + (done ? ' owned' : '');
+      const icons = document.createElement('div'); icons.className = 'icons';
+      st.items.slice(0, 3).forEach((k) => icons.appendChild(weaponIcon(k)));
+      const body = document.createElement('div'); body.className = 'item-body';
+      body.innerHTML = '<h3></h3><p class="contents"></p><p class="blurb"></p>';
+      body.querySelector('h3').textContent = st.name;
+      body.querySelector('.contents').textContent = st.items.map((k) => WEAPONS[k].name).join(' · ');
+      body.querySelector('.blurb').textContent = done ? 'You own all of these.' : have ? `${st.blurb} You already own ${have} of ${st.items.length}.` : st.blurb;
+      const btn = document.createElement('button'); btn.className = 'btn small';
+      if (done) { btn.textContent = 'Owned'; btn.disabled = true; }
+      else {
+        btn.innerHTML = priceHtml(setOffer(st));
+        btn.setAttribute('aria-label', `Buy ${st.name} for ${STORE.label(setOffer(st))}${STORE.mode === 'eggs' ? ' eggs' : ''}`);
+        if (STORE.mode === 'eggs' && save.eggs < st.eggs) btn.classList.add('short');
+        btn.onclick = () => buySet(st);
+      }
+      li.append(icons, body, btn); list.appendChild(li);
     });
   }
   function rollItem(minRarity) {
@@ -1214,18 +1323,26 @@
     showOverlay('packOpen');
   }
   function buy(kind, item) {
-    const msg = $('shopMsg');
-    if (save.eggs < item.price) {
-      msg.textContent = `You need ${item.price - save.eggs} more eggs for ${item.name}. Smack the chicken to earn them.`;
-      return;
-    }
-    Sfx.init();
-    save.eggs -= item.price; save[kind][item.id] = true;
-    if (kind === 'fins') save.fin = item.id;
-    persist();
-    Sfx.coin(Sfx.now()); Sfx.squeak(Sfx.now() + 0.2);
-    msg.textContent = `${item.name} unlocked and equipped.`;
-    renderShop();
+    // finishers (the only `kind` left) go through the store adapter like everything else
+    STORE.buy(finOffer(item), () => {
+      save[kind][item.id] = true;
+      if (kind === 'fins') save.fin = item.id;
+      celebrate(`${item.name} unlocked and equipped.`);
+    });
+  }
+  function buyItem(id) {
+    STORE.buy(itemOffer(id), () => { grantItems([id]); G.pickItem = null; celebrate(`${WEAPONS[id].name} is yours. It's in your smack pool now.`); });
+  }
+  function buySet(st) {
+    STORE.buy(setOffer(st), () => { grantItems(st.items); celebrate(`${st.name} unlocked: ${st.items.length} items added to your smack pool.`); });
+  }
+  function buyClub() {
+    STORE.buy(clubOffer(), () => {
+      CLUB.fins.forEach((f) => (save.fins[f] = true));
+      CLUB.sets.forEach((id) => grantItems(SETS.find((x) => x.id === id).items));
+      save.club = true;
+      celebrate('Welcome to the Cluck Club. Every finisher and two full sets are yours.');
+    });
   }
 
   // buttons
@@ -1308,7 +1425,7 @@
   });
 
   // test hook (used by the automated smoke test; harmless in play)
-  window.__cluck = { G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, takeChance, isRead, readPenalty, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
+  window.__cluck = { STORE, SETS, CLUB, buyItem, buySet, buyClub, G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, takeChance, isRead, readPenalty, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
 
   showOverlay('title');
   requestAnimationFrame(frame);

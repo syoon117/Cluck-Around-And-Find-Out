@@ -243,6 +243,17 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
 .odds summary { cursor: pointer; font-weight: 800; text-decoration: underline; }
 .odds p { font-size: 14px; margin-top: 4px; }
 .keys a { color: inherit; font-weight: 800; }
+.tile.locked { cursor: pointer; }
+.tile.locked:focus-visible, .tile.picked { outline: 3px solid var(--tomato); outline-offset: 1px; }
+.pick-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--ink); color: var(--cream); border: 3px solid var(--rar); border-radius: 16px; padding: 10px 12px; }
+.pick-bar .icon { width: 60px; height: 60px; }
+.pick-text { flex: 1 1 140px; min-width: 0; display: flex; flex-direction: column; }
+.pick-text b { font-family: var(--font-display); font-weight: 400; font-size: 18px; color: var(--yolk); }
+.pick-text span { font-size: 14px; opacity: 0.85; }
+.club-card { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: var(--yolk); border: 3px solid var(--ink); border-radius: 16px; padding: 14px; box-shadow: 4px 4px 0 var(--ink); }
+.club-text { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.club-text h3 { font-size: 22px; }
+.club-text p { font-size: 15px; }
 .brag { display: flex; gap: 10px; align-items: center; background: rgba(29, 18, 10, 0.1); border-radius: 12px; padding: 10px 12px; }
 .brag p { flex: 1; min-width: 0; font-style: italic; font-size: 15px; -webkit-user-select: text; user-select: text; }
 @media (max-width: 420px) {
@@ -339,8 +350,12 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
         </div>
         <p id="shopMsg" role="status" aria-live="polite"></p>
         <div class="shop-head"><div class="section-label">Your collection</div><div class="section-label" id="collCount">0 / 0</div></div>
-        <p class="hint">Every item you own is in your smack pool. The chicken already uses all of them.</p>
+        <p class="hint">Every item you own is in your smack pool. The chicken already uses all of them. Tap a locked one to buy it directly.</p>
         <ul id="collGrid" class="coll"></ul>
+        <div id="pickBar" class="pick-bar" hidden></div>
+        <div class="section-label">Sets · fixed contents, no luck</div>
+        <div id="clubCard" class="club-card"></div>
+        <ul id="setList" class="items"></ul>
         <div class="section-label">Finishers</div>
         <ul id="finList" class="items"></ul>
         <button id="btnShopBack" class="btn">Done</button>
