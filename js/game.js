@@ -993,9 +993,11 @@
     if (G.cup === 'player' && u < 0.9) D.text(ctx, 'PUT IT BACK', 380, 800, 26, '#ffb84d');
   }
 
+  const readyX = () => Math.min(705, HUD.r - 130);
   function drawReady(now) {
     const r = G.ready, bob = Math.sin(now * 6) * 8;
-    const x = 705, y = 830 + bob, rot = 1.35 + Math.sin(now * 6) * 0.05;
+    // keep the raised weapon on screen, even on narrow phones
+    const x = readyX(), y = 800 + bob, rot = 0.55 + Math.sin(now * 6) * 0.05;
     D.noodle(ctx, P.playerShoulder, { x: x + 10, y: y + 50 }, 46, '#c8352a', 0.1);
     ctx.save(); ctx.translate(x, y); ctx.rotate(rot); D.weapon(ctx, r.weapon, now); ctx.restore();
     if (r.weapon !== 'hand') D.glove(ctx, x, y, 1.15, rot, 'grip');
@@ -1011,7 +1013,7 @@
     const s = G.smack, el = now - s.t0;
     if (s.victim === 'chicken') {
       // your glove swings the weapon at the chicken's head
-      const K = [[0, 640, 1010, 0.7], [0.28, 705, 830, 1.35], [0.45, 470, 400, -0.5], [0.75, 330, 430, -1.05], [1.4, 760, 1150, 0.3]];
+      const K = [[0, 640, 1010, 0.7], [0.28, readyX(), 800, 0.55], [0.45, 470, 400, -0.5], [0.75, 330, 430, -1.05], [1.4, 760, 1150, 0.3]];
       let i = 0; while (i < K.length - 2 && el > K[i + 1][0]) i++;
       const a = K[i], b = K[i + 1];
       const u = clamp((el - a[0]) / (b[0] - a[0]), 0, 1), e = i === 1 ? u * u : easeOut(u);
@@ -1502,7 +1504,7 @@
   });
 
   // test hook (used by the automated smoke test; harmless in play)
-  window.__cluck = { Clip, STORE, SETS, CLUB, buyItem, buySet, buyClub, G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, takeChance, isRead, readPenalty, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
+  window.__cluck = { showPack, Clip, STORE, SETS, CLUB, buyItem, buySet, buyClub, G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, takeChance, isRead, readPenalty, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
 
   showOverlay('title');
   requestAnimationFrame(frame);
