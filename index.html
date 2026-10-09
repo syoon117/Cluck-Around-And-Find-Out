@@ -358,6 +358,7 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
         <ul id="setList" class="items"></ul>
         <div class="section-label">Finishers</div>
         <ul id="finList" class="items"></ul>
+        <button id="btnRestore" class="btn small alt" hidden>Restore purchases</button>
         <button id="btnShopBack" class="btn">Done</button>
       </div>
     </section>
@@ -425,13 +426,18 @@ kbd { font: 800 14px var(--font-body); border: 2px solid var(--ink); border-bott
     <button id="bTap" class="ctl" aria-label="Tap the cup">TAP<small>Space</small></button>
   </div>
 </div>
+<script src="js/vendor/capacitor.js"></script>
+<script src="js/store-config.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/draw.js"></script>
 <script src="js/game.js"></script>
+<script src="js/native-store.js"></script>
 <!-- page:end -->
 <script>
   // offline support once installed (service workers only run on https or localhost)
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  // (not needed inside the installed app, which already has every file on the device)
+  const nativeApp = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  if (!nativeApp && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 </script>

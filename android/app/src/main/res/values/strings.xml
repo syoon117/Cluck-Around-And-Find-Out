@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cluck Around</string>
+    <string name="title_activity_main">Cluck Around</string>
+    <string name="package_name">com.cluckaroundgame.app</string>
+    <string name="custom_url_scheme">com.cluckaroundgame.app</string>
+</resources>

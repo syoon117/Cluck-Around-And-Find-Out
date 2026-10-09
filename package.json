@@ -1,0 +1,23 @@
+{
+  "name": "cluck-around-and-find-out",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A 1v1 reflex game against a rubber chicken.",
+  "scripts": {
+    "build:web": "node tools/build-web.js",
+    "itch": "node tools/build-web.js --itch",
+    "store:capture": "node tools/capture-store-assets.js",
+    "cap:sync": "node tools/build-web.js && cap sync",
+    "android": "node tools/build-web.js && cap sync android && cap open android",
+    "ios": "node tools/build-web.js && cap sync ios && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
+    "@revenuecat/purchases-capacitor": "^13.7.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}

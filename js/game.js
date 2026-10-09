@@ -119,6 +119,31 @@
     persist(); renderShop();
   }
   function grantItems(ids) { ids.forEach((k) => (save.items[k] = true)); }
+  // unlock whatever a store product id stands for (used by purchases and by Restore purchases)
+  function grantProduct(pid) {
+    let m;
+    if ((m = /^item_(.+)$/.exec(pid)) && WEAPONS[m[1]]) grantItems([m[1]]);
+    else if ((m = /^set_(.+)$/.exec(pid)) && SETS.find((x) => x.id === m[1])) grantItems(SETS.find((x) => x.id === m[1]).items);
+    else if ((m = /^finisher_(.+)$/.exec(pid)) && FINISHERS.find((f) => f.id === m[1])) save.fins[m[1]] = true;
+    else if (pid === product.club()) {
+      CLUB.fins.forEach((f) => (save.fins[f] = true));
+      CLUB.sets.forEach((id) => grantItems(SETS.find((x) => x.id === id).items));
+      save.club = true;
+    } else return false;
+    return true;
+  }
+  async function restorePurchases() {
+    const msg = $('shopMsg');
+    if (!window.CluckIAP || !window.CluckIAP.restore) return;
+    msg.textContent = 'Checking your purchases...';
+    try {
+      const ids = await window.CluckIAP.restore();
+      const n = ids.filter(grantProduct).length;
+      persist(); renderShop();
+      msg.textContent = n ? `Restored ${n} purchase${n === 1 ? '' : 's'}.` : 'No previous purchases found on this account.';
+    } catch (e) { msg.textContent = "Couldn't reach the store. Check your connection and try again."; }
+  }
+  window.CluckStore = STORE; // js/native-store.js switches this to real money inside the app
 
   const NAMES = ["Lil' Squeaker", 'Gary', 'Big Green', 'Nugget', 'Keychain Kevin', 'Sir Honksalot', 'Drumstick Dan', 'The Squeakfather', 'Cluckzilla', 'Henrietta the Unhinged'];
   const SKIN_BY_LEVEL = [0, 0, 1, 0, 2, 3, 0, 4, 1, 2];
@@ -1269,6 +1294,7 @@
     }));
     renderPickBar();
     renderSets();
+    $('btnRestore').hidden = !STORE.restorable;
     const fl = $('finList'); fl.innerHTML = '';
     FINISHERS.forEach((f) => {
       const owned = !!save.fins[f.id];
@@ -1463,6 +1489,7 @@
   on('btnPackDone', () => { $('shopMsg').textContent = ''; showOverlay('shop'); });
   on('btnClearBrag', (e) => copyBrag('clearBrag', e.currentTarget));
   on('btnClip', shareClip);
+  on('btnRestore', restorePurchases);
   on('btnOverBrag', (e) => copyBrag('overBrag', e.currentTarget));
   on('btnQuit', () => { G.tut = null; G.paused = false; Sfx.resume(); G.fin = null; G.smack = null; G.ready = null; G.bubble = null; G.scene = 'title'; showOverlay('title'); });
   on('btnPause', pause);
@@ -1504,7 +1531,7 @@
   });
 
   // test hook (used by the automated smoke test; harmless in play)
-  window.__cluck = { showPack, Clip, STORE, SETS, CLUB, buyItem, buySet, buyClub, G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, takeChance, isRead, readPenalty, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
+  window.__cluck = { grantProduct, showPack, Clip, STORE, SETS, CLUB, buyItem, buySet, buyClub, G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, takeChance, isRead, readPenalty, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
 
   showOverlay('title');
   requestAnimationFrame(frame);

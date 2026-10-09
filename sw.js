@@ -1,10 +1,10 @@
 // Offline support for the installed app. When online it always loads the latest version (so
 // updates show up on the very next launch), and falls back to the saved copy when offline.
 // Bump VERSION when you add or rename files.
-const VERSION = 'cluck-v3';
+const VERSION = 'cluck-v4';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
-  'js/audio.js', 'js/draw.js', 'js/game.js',
+  'js/audio.js', 'js/draw.js', 'js/game.js', 'js/vendor/capacitor.js', 'js/store-config.js', 'js/native-store.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'fonts/fonts.css', 'fonts/rammetto-one-latin-400-normal.woff2',
   'fonts/barlow-semi-condensed-latin-500-normal.woff2', 'fonts/barlow-semi-condensed-latin-700-normal.woff2',

@@ -114,6 +114,29 @@ All graphics are drawn on a canvas and every sound is synthesized with the Web A
 - `js/draw.js`: canvas drawing (room, chicken, gloves, cup, bell, all 44 items, particles)
 - `js/game.js`: rhythm engine, chicken AI, smacks, finishers, shop, save data (localStorage)
 
+## Native apps (Capacitor)
+
+`android/` and `ios/` are Capacitor 8 projects that wrap the game (app id `com.cluckaroundgame.app`, name "Cluck Around"). The web files are copied into them from `www/`, which `tools/build-web.js` builds.
+
+```sh
+npm install                 # once
+npm run cap:sync            # rebuild www/ and copy it into both apps
+npm run android             # ...and open Android Studio (needs Android Studio on your computer)
+npm run ios                 # ...and open Xcode (needs a Mac with Xcode)
+```
+
+- Icons and splash screens come from the game's chicken art: `node tools/make-native-art.js`.
+- iOS uses Swift Package Manager (no CocoaPods).
+- **Real money:** `@revenuecat/purchases-capacitor` is installed and `js/native-store.js` connects it to the shop. Inside the app, once `js/store-config.js` has `realMoney: true` and the RevenueCat public keys, prices switch to dollars, purchases go through Apple/Google, and the shop shows **Restore purchases** (Apple requires it). Product ids are listed under "Direct-purchase shop" above; create them as non-consumable in-app products in App Store Connect / Play Console and attach them in RevenueCat. Until then, the apps run on eggs like the web version.
+
+## itch.io
+
+`npm run itch` builds `store/itch/cluck-around-and-find-out-web.zip`. Page text, tags and settings are in `store/itch/README.md`.
+
+## Store assets
+
+`npm run store:capture` regenerates screenshots, the trailer, the feature graphic and the itch.io cover from the game. See `store/README.md`.
+
 ## Toward the App Store
 
 The plan is to wrap this folder as a native app with [Capacitor](https://capacitorjs.com/) (`npx cap add ios`, then point `webDir` at this folder). Things to handle when you get there:

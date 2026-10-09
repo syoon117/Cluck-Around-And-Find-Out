@@ -1,0 +1,8 @@
+{
+  "appId": "com.cluckaroundgame.app",
+  "appName": "Cluck Around",
+  "webDir": "www",
+  "backgroundColor": "#0b2c29",
+  "ios": { "contentInset": "never", "backgroundColor": "#0b2c29" },
+  "android": { "backgroundColor": "#0b2c29" }
+}
