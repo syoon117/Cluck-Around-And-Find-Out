@@ -41,6 +41,10 @@ For everyone, afterwards:
 
 The first time you hit Play in a session there's a ~7 second cold open: a beaten rubber chicken on the floor, a slow push-in with a drone and heartbeat, its eye snaps open, and it comes back screaming for revenge. Tap or press any key to skip it. The **Intro** toggle on the title screen turns it off for good.
 
+## Share a clip
+
+Every finisher is recorded straight off the game canvas, with the game audio and a **LEVEL N** stamp burned in (up to 15 seconds). The level-clear screen then shows **Share clip**, which opens the phone's share sheet (TikTok, Instagram, Messages...), or **Save clip** on desktop, which downloads it. MP4 (H.264) where supported, WebM otherwise. Pausing or quitting mid-finisher throws the clip away.
+
 ## Items and Mystery Packs
 
 There are 44 things to get smacked with, in five tiers: Starter (Bare Hand, Cafeteria Tray), Common, Rare, Epic and Legendary. Examples: frying pan, rubber duck, flip phone, eggplant, electric guitar, rotisserie chicken, toilet seat, fire extinguisher, grandma's purse, participation trophy, anvil, the kitchen sink, a live goose, the Purple Wobbler. Each item has its own drawing and impact sound.

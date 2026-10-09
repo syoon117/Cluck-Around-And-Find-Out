@@ -1,7 +1,7 @@
 // Every sound in the game is synthesized with the Web Audio API — no audio files.
 // The audio clock (Sfx.now) is also the game's master clock so the rhythm stays tight.
 const Sfx = (() => {
-  let ac = null, master, sfxBus, musicBus, noiseBuf;
+  let ac = null, master, sfxBus, musicBus, noiseBuf, comp, recDest = null;
   let musicOn = true, sfxOn = true;
 
   // `offline` lets tools render sounds into an OfflineAudioContext to check them without speakers.
@@ -13,7 +13,7 @@ const Sfx = (() => {
     try { if (!offline && navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
     ac = offline || new AC({ latencyHint: 'interactive' });
     master = ac.createGain(); master.gain.value = 0.9;
-    const comp = ac.createDynamicsCompressor();
+    comp = ac.createDynamicsCompressor();
     comp.threshold.value = -12; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.15;
     master.connect(comp); comp.connect(ac.destination);
     sfxBus = ac.createGain(); sfxBus.connect(master);
@@ -366,6 +366,12 @@ const Sfx = (() => {
 
   return {
     init, now, latency, get ctx() { return ac; },
+    // the final mix as a MediaStream, so clips can record the game's sound
+    stream() {
+      if (!ac || !ac.createMediaStreamDestination) return null;
+      if (!recDest) { recDest = ac.createMediaStreamDestination(); comp.connect(recDest); }
+      return recDest.stream;
+    },
     suspend() { if (ac && ac.state === 'running') ac.suspend(); },
     resume() { if (ac && ac.state === 'suspended') ac.resume(); },
     get musicOn() { return musicOn; },

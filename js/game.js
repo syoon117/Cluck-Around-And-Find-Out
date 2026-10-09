@@ -627,8 +627,80 @@
     }
   }
 
+  // ---------- share-a-clip ----------
+  // Records the finisher straight off the game canvas (plus the game's audio) with the level
+  // stamped on it, so players can post it. MP4 where the browser supports it, otherwise WebM.
+  const Clip = {
+    rec: null, chunks: [], blob: null, type: '', level: 0, timer: 0, discard: false,
+    supported() { return !!(window.MediaRecorder && canvas.captureStream); },
+    start(level) {
+      this.stop(true);
+      this.blob = null; this.chunks = []; this.level = level;
+      if (!this.supported()) return;
+      try {
+        const tracks = [...canvas.captureStream(30).getVideoTracks()];
+        const audio = Sfx.stream();
+        if (audio) tracks.push(...audio.getAudioTracks());
+        const types = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+        this.type = types.find((t) => MediaRecorder.isTypeSupported(t)) || '';
+        this.rec = new MediaRecorder(new MediaStream(tracks), this.type ? { mimeType: this.type, videoBitsPerSecond: 5e6 } : {});
+      } catch (e) { this.rec = null; return; }
+      const rec = this.rec;
+      this.discard = false;
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) this.chunks.push(e.data); };
+      rec.onstop = () => {
+        if (this.discard || !this.chunks.length) return;
+        this.blob = new Blob(this.chunks, { type: (this.type || rec.mimeType || 'video/webm').split(';')[0] });
+        syncClipButton();
+      };
+      rec.start(250);
+      this.timer = setTimeout(() => this.stop(), 15000); // clips stay short
+    },
+    stop(discard) {
+      clearTimeout(this.timer);
+      if (this.rec && this.rec.state !== 'inactive') { this.discard = !!discard; this.rec.stop(); }
+      this.rec = null;
+    },
+    get recording() { return !!this.rec; },
+    fileName() { return `cluck-around-level-${this.level}.${/mp4/.test(this.blob.type) ? 'mp4' : 'webm'}`; },
+  };
+  function syncClipButton() {
+    const b = $('btnClip');
+    if (!b) return;
+    b.hidden = !Clip.blob;
+    if (Clip.blob) {
+      const f = new File([Clip.blob], Clip.fileName(), { type: Clip.blob.type });
+      b.textContent = navigator.canShare && navigator.canShare({ files: [f] }) ? 'Share clip' : 'Save clip';
+    }
+  }
+  async function shareClip() {
+    if (!Clip.blob) return;
+    const file = new File([Clip.blob], Clip.fileName(), { type: Clip.blob.type });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Cluck Around and Find Out', text: bragText() });
+        return;
+      }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    // no share sheet (desktop): download the file instead
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    $('btnClip').textContent = 'Saved';
+  }
+  function drawClipStamp() {
+    // burned into the recording so every shared clip shows the level and the game name
+    ctx.save();
+    D.rr(ctx, 230, 14, 300, 74, 18); D.fs(ctx, 'rgba(29,18,10,0.78)', '#ffd84a', 3);
+    D.text(ctx, `LEVEL ${Clip.level}`, 380, 44, 34, '#ffd84a');
+    D.text(ctx, 'CLUCK AROUND AND FIND OUT', 380, 74, 14, '#fff3c4', { font: "'Barlow Semi Condensed', sans-serif", weight: 800, lw: 4 });
+    ctx.restore();
+  }
+
   // ---------- finisher ----------
   function startFinisher() {
+    Clip.start(G.level);
     const now = Sfx.now();
     G.scene = 'fin';
     G.hpC = 0;
@@ -700,6 +772,8 @@
   // ---------- results ----------
   function levelClear() {
     const now = Sfx.now();
+    setTimeout(() => Clip.stop(), 350); // keep the K.O. beat in the clip
+    $('btnClip').hidden = true;
     G.scene = 'clear';
     G.fin = null;
     const bonus = 10 + 5 * G.level;
@@ -736,6 +810,7 @@
     if (G.scene === 'intro') return endIntro();
     if (G.paused || !['play', 'wait', 'smack', 'fin', 'ready'].includes(G.scene)) return;
     if (G.fin && G.fin.holding) finHold(false);
+    if (G.scene === 'fin') Clip.stop(true);
     G.paused = true; Sfx.suspend(); showOverlay('pause');
   }
   function resume() {
@@ -1018,6 +1093,7 @@
     drawFinText(now);
   }
   function drawFinText(now) {
+    if (Clip.recording) drawClipStamp();
     const f = G.fin, el = now - f.t0;
     const fin = FINISHERS.find((x) => x.id === f.type);
     D.text(ctx, fin.name.toUpperCase(), 380, 770, 40, '#ffd84a', { rot: -0.03 });
@@ -1384,6 +1460,7 @@
   on('btnPackAgain', buyPack);
   on('btnPackDone', () => { $('shopMsg').textContent = ''; showOverlay('shop'); });
   on('btnClearBrag', (e) => copyBrag('clearBrag', e.currentTarget));
+  on('btnClip', shareClip);
   on('btnOverBrag', (e) => copyBrag('overBrag', e.currentTarget));
   on('btnQuit', () => { G.tut = null; G.paused = false; Sfx.resume(); G.fin = null; G.smack = null; G.ready = null; G.bubble = null; G.scene = 'title'; showOverlay('title'); });
   on('btnPause', pause);
@@ -1425,7 +1502,7 @@
   });
 
   // test hook (used by the automated smoke test; harmless in play)
-  window.__cluck = { STORE, SETS, CLUB, buyItem, buySet, buyClub, G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, takeChance, isRead, readPenalty, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
+  window.__cluck = { Clip, STORE, SETS, CLUB, buyItem, buySet, buyClub, G, save, beginGame, launch, startLevel, startFinisher, readySmack, tempoFor, rankFor, takeChance, isRead, readPenalty, press, finHold, WEAPONS, RARITY, MYSTERY, grantPack, FINISHERS };
 
   showOverlay('title');
   requestAnimationFrame(frame);
